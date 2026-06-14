@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>研究室時數單向申報平台</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', 'Noto Sans TC', sans-serif;
+    }
+    /* 隱藏 Chrome/Safari 數字輸入框的上下箭頭 */
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    /* 隱藏 Firefox 數字輸入框的上下箭頭 */
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- 頂部通知 Toast 容器 -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- 頂部導覽列 -->
+  <header class="bg-slate-900 text-white shadow-md shrink-0">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="bg-indigo-600 p-2 rounded-lg">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" strokeLinejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-wide">研究室時數申報平台</h1>
+          <p class="text-xs text-indigo-300">學生單向直接回報 ✖ 老師即時查閱與項目自訂</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- 雲端連線狀態 -->
+        <span id="db-status-badge" class="px-2.5 py-1 text-xs rounded-full flex items-center gap-1.5 font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          連線檢測中...
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 目前登入狀態狀態條 -->
+  <div id="user-status-bar" class="bg-slate-800 text-white text-xs px-4 py-2.5 border-t border-slate-700 hidden shrink-0">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+      <span id="user-status-text" class="font-medium">👤 目前登入：載入中...</span>
+      <button onclick="handleUserLogout()" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1 rounded font-bold transition shadow-sm">
+        登出 / 切換身份
+      </button>
+    </div>
+  </div>
+
+  <!-- 主內容容器 -->
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+
+    <!-- ================= 0. 登入驗證頁面 (未登入時呈現) ================= -->
+    <div id="login-view" class="max-w-md mx-auto my-12 bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+      <div class="bg-indigo-600 text-white p-6 text-center">
+        <h2 class="text-xl font-bold">👤 研究室申報登入</h2>
+        <p class="text-xs text-indigo-100 mt-1">請選擇您的所別與姓名進行驗證登入</p>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="text-xs font-bold text-slate-500 block mb-1">1. 選擇科系所別</label>
+          <select id="login-dept" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 bg-white focus:outline-none">
+            <option value="">-- 請選擇所別 --</option>
+            <option value="醫工所">醫工所</option>
+            <option value="人智所">人智所</option>
+            <option value="老師">老師</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-bold text-slate-500 block mb-1">2. 選擇姓名</label>
+          <select id="login-name" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 bg-slate-100 focus:outline-none" disabled>
+            <option value="">-- 請先選擇所別 --</option>
+          </select>
+        </div>
+        <div id="login-password-section" class="hidden">
+          <label class="text-xs font-bold text-slate-500 block mb-1">3. 輸入登入密碼</label>
+          <input type="password" id="login-password" placeholder="請輸入密碼 (預設為大小寫英文+數字)..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+        </div>
+        <button id="login-btn" onclick="handleUserLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-sm transition shadow-sm mt-2">
+          確認登入
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= 系統主功能區 (已登入時才會被 JS 顯示) ================= -->
+    <div id="main-dashboard" class="space-y-6 hidden">
+      <!-- 全局控制列：選擇週別與切換分頁 -->
+      <div class="bg-white rounded-xl shadow-sm p-4 flex flex-col sm:flex-row justify-between items-center gap-4 border border-slate-200">
+        <!-- 週別選擇器 -->
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+          <label class="text-sm font-semibold text-slate-600 shrink-0">📅 選擇週別：</label>
+          <input type="week" id="week-picker" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none w-full sm:w-auto bg-slate-50" />
+        </div>
+
+        <!-- 分頁標籤 -->
+        <div id="tab-container" class="flex rounded-lg bg-slate-100 p-1 w-full sm:w-auto">
+          <!-- 動態依身份切換載入 -->
+        </div>
+      </div>
+
+      <!-- ================= 學生端：時數申報面版 ================= -->
+      <div id="student-report-view" class="grid grid-cols-1 lg:grid-cols-3 gap-6 hidden">
+        <!-- 左側：卡片列表 -->
+        <div class="lg:col-span-2 space-y-6" id="project-cards-container">
+          <!-- 由 JS 動態繪製專案卡片 -->
+        </div>
+
+        <!-- 右側：申報摘要 -->
+        <div class="space-y-6">
+          <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden sticky top-6">
+            <div class="bg-indigo-600 text-white p-4">
+              <h3 class="font-bold text-base">📊 本週填報狀態摘要</h3>
+              <p id="summary-user-display" class="text-xs text-indigo-100 mt-1">載入中...</p>
+            </div>
+
+            <div class="p-4 space-y-5">
+              <!-- 累積時數圓盤 -->
+              <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
+                <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider">本週已申報累計</p>
+                <p id="total-hours-badge" class="text-5xl font-black text-indigo-600 my-2">0</p>
+                <p class="text-[11px] text-slate-400">時數點擊下方「直接送出」後將即時呈報老師</p>
+              </div>
+
+              <!-- 單向送出狀態提示 -->
+              <div id="submission-status-card" class="bg-slate-100 p-3 rounded-lg border border-slate-200">
+                <!-- 動態變更 -->
+              </div>
+
+              <!-- 老師留下的意見 -->
+              <div id="teacher-feedback-card" class="bg-indigo-50 text-indigo-900 p-3 rounded-lg border border-indigo-100 hidden">
+                <span class="text-xs font-bold text-indigo-800 block">💬 老師對本週的回饋意見：</span>
+                <p id="teacher-feedback-text" class="text-xs text-slate-700 mt-1 italic">"-"</p>
+              </div>
+
+              <button type="button" onclick="submitHours()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow-sm flex items-center justify-center gap-2">
+                <span>🚀 直接送出本週時數</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= 學生端：申報歷史紀錄 ================= -->
+      <div id="student-history-view" class="bg-white rounded-xl shadow-sm p-6 border border-slate-200 hidden">
+        <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">📂 我的時數回報歷史</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500">
+                <th class="p-3 font-semibold">週別</th>
+                <th class="p-3 font-semibold">申報項目與摘要</th>
+                <th class="p-3 font-semibold text-center">總計時數</th>
+                <th class="p-3 font-semibold">送出時間</th>
+                <th class="p-3 font-semibold">老師回饋</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body" class="divide-y divide-slate-100 text-sm">
+              <!-- 動態繪製 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ================= 教師端：時數查閱後台 ================= -->
+      <div id="teacher-review-view" class="space-y-6 hidden">
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-4 mb-4 gap-4">
+            <div>
+              <h2 class="text-lg font-bold text-slate-800">📋 學生時數直接回報看板</h2>
+              <p class="text-xs text-slate-400 mt-1">此處即時呈現學生單向提交的數據，資料已在 Google Sheet 同步存檔</p>
+            </div>
+            <button onclick="exportToCSV()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" strokeLinejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              匯出本週時數 CSV
+            </button>
+          </div>
+
+          <div id="submissions-list" class="space-y-4">
+            <!-- 老師看見的申報清單 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= 教師端：專案項目自訂配置 ================= -->
+      <div id="teacher-config-view" class="space-y-6 hidden">
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+          <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
+            <div>
+              <h2 class="text-lg font-bold text-slate-800">⚙️ 計畫專案與子項目管理</h2>
+              <p class="text-xs text-slate-400 mt-1">在此處的管理更動會同步儲存於 Google Sheet，增減項目「絕不跑版、絕不錯位」！</p>
+            </div>
+            <button onclick="promptCreateProject()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 rounded-lg transition shadow-sm">
+              ➕ 新增全新大計畫
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="config-projects-container">
+            <!-- 自訂大項目的配置 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= 教師端：實驗室成員與密碼管理 ================= -->
+      <div id="teacher-users-view" class="space-y-6 hidden">
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+          <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
+            <div>
+              <h2 class="text-lg font-bold text-slate-800">👥 實驗室成員帳號與密碼管理</h2>
+              <p class="text-xs text-slate-400 mt-1">此處名單與 Google Sheet 的 Users 工作表即時同步。您可以直接修改所別、姓名或密碼，並一鍵同步儲存！</p>
+            </div>
+            <button onclick="addNewUserRow()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 rounded-lg transition shadow-sm">
+              ➕ 新增實驗室成員
+            </button>
+          </div>
+          
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500">
+                  <th class="p-3 font-semibold">成員 ID</th>
+                  <th class="p-3 font-semibold">所別科系</th>
+                  <th class="p-3 font-semibold">姓名</th>
+                  <th class="p-3 font-semibold">系統角色</th>
+                  <th class="p-3 font-semibold">登入密碼</th>
+                  <th class="p-3 font-semibold text-center">操作</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body" class="divide-y divide-slate-100 text-xs">
+                <!-- 動態繪製 -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-4">
+            <button onclick="saveUsersToCloud()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg text-xs transition shadow-sm">
+              💾 儲存並同步成員名單
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= 教師端：時數統計分析 ================= -->
+      <div id="teacher-analytics-view" class="bg-white rounded-xl shadow-sm p-6 border border-slate-200 hidden">
+        <h2 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">📊 本週科研工時統計</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <!-- 各成員時數佔比 -->
+          <div class="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
+            <h3 class="font-bold text-slate-700 text-xs mb-4 uppercase tracking-wider">各成員本周參與時數</h3>
+            <div id="member-analytics-list" class="space-y-4">
+              <!-- 成員圖條 -->
+            </div>
+          </div>
+
+          <!-- 專案分配排行 -->
+          <div class="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
+            <h3 class="font-bold text-slate-700 text-xs mb-4 uppercase tracking-wider">各計畫案投入總時數</h3>
+            <div id="project-analytics-list" class="space-y-4">
+              <!-- 專案投入比 -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 老師留言 Modal -->
+  <div id="feedback-modal" class="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+      <div class="bg-slate-800 text-white p-4 flex justify-between items-center">
+        <h3 class="font-bold text-sm">留下意見反饋 / 時數查閱註記</h3>
+        <button onclick="closeFeedbackModal()" class="text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" strokeLinejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div>
+          <span class="text-xs text-slate-400 font-bold block mb-1">申報人與週別</span>
+          <p id="modal-target-info" class="font-bold text-slate-800 text-sm">陳小明 - 2026-W24</p>
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs text-slate-500 font-bold">填寫回饋（將直接推送在學生的申報面板中）</label>
+          <textarea id="modal-feedback-textarea" rows="3" placeholder="例如：文獻整理得非常詳盡，辛苦了！" class="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none"></textarea>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button onclick="closeFeedbackModal()" class="w-1/2 border border-slate-300 py-2 rounded-lg text-xs font-semibold text-slate-600 transition">
+            取消
+          </button>
+          <button onclick="saveFeedback()" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg text-xs transition shadow-sm">
+            儲存反饋並確認
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 編輯專案名稱及任務 Modal -->
+  <div id="project-edit-modal" class="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
+      <div class="bg-slate-800 text-white p-4 flex justify-between items-center">
+        <h3 class="font-bold text-sm">編輯計畫與子項目</h3>
+        <button onclick="closeProjectEditModal()" class="text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" strokeLinejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto" id="project-edit-modal-content">
+        <!-- 動態繪製編輯內容 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 自訂確認刪除成員 Modal (100% 避免 alert/confirm) -->
+  <div id="confirm-delete-modal" class="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 border border-slate-200">
+      <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1 text-rose-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" strokeLinejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        確認刪除成員？
+      </h3>
+      <p id="confirm-delete-text" class="text-xs text-slate-500 mt-2.5">您確定要將此成員從名單中移除嗎？</p>
+      <div class="flex gap-3 pt-4 justify-end">
+        <button onclick="closeConfirmDeleteModal()" class="border border-slate-300 py-1.5 px-4 rounded-lg text-xs font-semibold text-slate-600 transition">取消</button>
+        <button id="confirm-delete-btn" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-1.5 px-4 rounded-lg text-xs transition shadow-sm">確認刪除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 頁尾 -->
+  <footer class="bg-slate-900 text-slate-500 py-6 text-center text-xs border-t border-slate-800 shrink-0">
+    <p>© 2026 實驗室時數填報平台. All Rights Reserved.</p>
+  </footer>
+
+  <!-- ================= 業務狀態邏輯 (JavaScript) ================= -->
+  <script type="module">
+    // --- 定義全域提示視窗函式 (修復 Reference ＆ TypeError) ---
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = `flex items-center p-3 rounded-lg shadow-lg text-white transition-all duration-300 transform translate-y-2 opacity-0 ${
+        type === 'error' ? 'bg-rose-600' : type === 'warning' ? 'bg-amber-500' : 'bg-emerald-600'
+      }`;
+      toast.style.pointerEvents = 'auto';
+      toast.innerHTML = `<span class="text-xs font-semibold">${message}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 50);
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-2', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+    window.showToast = showToast;
+
+    // --- 🚨 GOOGLE SHEET APPS SCRIPT WEB APP 網址設定 🚨 ---
+    // 請依照說明步驟，將您部署後的 Apps Script「網頁應用程式 URL」貼在下方雙引號中：
+    const GAS_WEB_APP_URL = "https://lab-return-platform.janice-064.workers.dev/"; 
+
+    // --- 預設預載項目結構 (若無法連線 Google Sheet 時的備用) ---
+    const INITIAL_PROJECTS = [
+      {
+        id: "thesis",
+        name: "論文相關",
+        color: "emerald",
+        tasks: ["論文撰寫", "資料整理", "資料分析", "AI 模型", "IRB 準備/討論", "實驗"]
+      },
+      {
+        id: "courses",
+        name: "修課相關",
+        color: "rose",
+        tasks: ["上課", "課堂作業", "語言學習 (如英文、中文)"]
+      },
+      {
+        id: "research",
+        name: "研究",
+        color: "amber",
+        tasks: ["文獻閱讀/報告/翻譯", "文章投稿", "教育訓練"]
+      },
+      {
+        id: "triathlon",
+        name: "三鐵計畫",
+        color: "sky",
+        tasks: [
+          "參與者招募相關", "官方Line回覆", "提醒參與者 (如量舌溫、填問卷、預約檢測)", 
+          "最大攝氧量檢測", "身體組成量測", "體適能檢測", "游泳檢測", 
+          "資料彙整、統計報表", "資料分析 (如Biodex)", "AI教練", "會議", "IRB 準備/討論"
+        ]
+      },
+      {
+        id: "asus",
+        name: "ASUS計畫",
+        color: "orange",
+        tasks: [
+          "會議", "IRB 準備/討論", "文獻", "實驗設計", "實驗", 
+          "簡報準備", "QTM分析", "EMG分析", "EMG儀器 (聯絡陳老闆)", 
+          "製作滿意度問卷", "修改實驗紀錄單"
+        ]
+      },
+      {
+        id: "dizziness",
+        name: "暈眩計畫",
+        color: "teal",
+        tasks: ["招募研究參與者", "IRB 準備/討論", "實驗", "iRB 延展/寄出"]
+      },
+      {
+        id: "usr",
+        name: "USR計畫",
+        color: "purple",
+        tasks: ["檢測", "運動訓練課程", "講座", "會議", "聯繫事宜", "IRB 準備/討論"]
+      },
+      {
+        id: "spark",
+        name: "SPARK計畫",
+        color: "slate",
+        tasks: ["課程活動", "招募研究參與者", "實驗", "資料分析", "輔大醫院 IRB 準備/討論"]
+      },
+      {
+        id: "stem",
+        name: "STEM計畫",
+        color: "amber-dark",
+        tasks: ["校外活動"]
+      },
+      {
+        id: "cathay",
+        name: "國泰計畫",
+        color: "red",
+        tasks: ["國泰計畫 (IRB + 院內計畫書)"]
+      },
+      {
+        id: "tri_service",
+        name: "三總計畫",
+        color: "pink",
+        tasks: ["三總計畫 (收案 + 數據整理)"]
+      }
+    ];
+
+    const COLOR_MAPS = {
+      emerald: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-800", badge: "bg-emerald-100 text-emerald-800", hex: "#10b981" },
+      rose: { bg: "bg-rose-50", border: "border-rose-200", text: "text-rose-800", badge: "bg-rose-100 text-rose-800", hex: "#f43f5e" },
+      amber: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-800", badge: "bg-amber-100 text-amber-800", hex: "#f59e0b" },
+      sky: { bg: "bg-sky-50", border: "border-sky-200", text: "text-sky-800", badge: "bg-sky-100 text-sky-800", hex: "#0ea5e9" },
+      orange: { bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-800", badge: "bg-orange-100 text-orange-800", hex: "#f97316" },
+      teal: { bg: "bg-teal-50", border: "border-teal-200", text: "text-teal-800", badge: "bg-teal-100 text-teal-800", hex: "#14b8a6" },
+      purple: { bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-800", badge: "bg-purple-100 text-purple-800", hex: "#a855f7" },
+      slate: { bg: "bg-slate-50", border: "border-slate-200", text: "text-slate-800", badge: "bg-slate-100 text-slate-800", hex: "#64748b" },
+      "amber-dark": { bg: "bg-yellow-50", border: "border-yellow-200", text: "text-yellow-900", badge: "bg-yellow-100 text-yellow-900", hex: "#d97706" },
+      red: { bg: "bg-red-50", border: "border-red-200", text: "text-red-800", badge: "bg-red-100 text-red-800", hex: "#dc2626" },
+      pink: { bg: "bg-pink-50", border: "border-pink-200", text: "text-pink-800", badge: "bg-pink-100 text-pink-800", hex: "#ec4899" }
+    };
+
+    // --- 全局狀態 ---
+    let state = {
+      dbConnected: false,
+      currentUser: null, // 預設未登入
+      activeTab: 'report', // 學生: 'report'|'history' ; 老師: 'review'|'config'|'users'|'analytics'
+      projects: INITIAL_PROJECTS,
+      submissions: [],
+      users: INITIAL_USERS, // 動態成員列表
+      selectedWeek: "",
+      hoursInput: {},  // key: "projectId_taskName" -> val: float
+      customTasks: [], // { taskName: string, hours: float }
+      editingProject: null,
+      activeModalSubmission: null
+    };
+
+    // --- 初始化目前週別的函式 ---
+    function initCurrentWeek() {
+      const now = new Date();
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      const pastDaysOfYear = (now - startOfYear) / 86400000;
+      const weekNum = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+      state.selectedWeek = `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+      document.getElementById('week-picker').value = state.selectedWeek;
+    }
+
+    // --- 🚨 雲端輔助 POST 請求發送器 (解決 GAS 重新導向的 CORS 限制錯誤) 🚨 ---
+    async function sendGasPost(payload) {
+      if (!GAS_WEB_APP_URL) return;
+      await fetch(GAS_WEB_APP_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    // --- 載入 Google Sheet 資料 ---
+    async function loadSheetData() {
+      if (!GAS_WEB_APP_URL) {
+        setupLocalStorageFallback();
+        setTimeout(() => {
+          showToast("💡 偵測到尚未設定 Google Sheet 網址，已切換至「離線快取測試模式」！", "warning");
+        }, 1000);
+        return;
+      }
+      try {
+        const res = await fetch(GAS_WEB_APP_URL);
+        const data = await res.json();
+        
+        state.projects = data.projects;
+        state.submissions = data.submissions;
+        state.users = data.users || INITIAL_USERS;
+        state.dbConnected = true;
+
+        const badge = document.getElementById('db-status-badge');
+        badge.className = "px-2.5 py-1 text-xs rounded-full flex items-center gap-1.5 font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/20";
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>Google Sheet 連線中`;
+
+        onDataLoaded();
+        setupLoginInterface(); // 連線成功後，初始化登入頁面下拉名單
+      } catch (err) {
+        console.warn("無法自 Google Sheet 載入資料，將啟用 LocalStorage Fallback 模擬：", err);
+        setupLocalStorageFallback();
+        showToast("⚠️ 無法連線 Google Sheet，目前已自動切換為本地模擬測試模式。", "warning");
+      }
+    }
+
+    function setupLocalStorageFallback() {
+      state.dbConnected = false;
+      const badge = document.getElementById('db-status-badge');
+      badge.className = "px-2.5 py-1 text-xs rounded-full flex items-center gap-1.5 font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20";
+      badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span>本地模擬快取模式`;
+
+      // 計畫案
+      const localProjects = localStorage.getItem('reporting_html_projects');
+      if (localProjects) {
+        state.projects = JSON.parse(localProjects);
+      } else {
+        localStorage.setItem('reporting_html_projects', JSON.stringify(INITIAL_PROJECTS));
+      }
+
+      // 填報紀錄
+      const localSubmissions = localStorage.getItem('reporting_html_submissions');
+      if (localSubmissions) {
+        state.submissions = JSON.parse(localSubmissions);
+      } else {
+        localStorage.setItem('reporting_html_submissions', JSON.stringify([]));
+      }
+
+      // 成員帳號名單
+      const localUsers = localStorage.getItem('reporting_html_users');
+      if (localUsers) {
+        state.users = JSON.parse(localUsers);
+      } else {
+        localStorage.setItem('reporting_html_users', JSON.stringify(INITIAL_USERS));
+      }
+
+      onDataLoaded();
+      setupLoginInterface();
+    }
+
+    // --- 邊界數據載入與變動更新流程 ---
+    function onDataLoaded() {
+      syncHoursStateWithSubmission();
+      renderTabs();
+      renderActiveTab();
+    }
+
+    // --- 當切換週別或人員，載入先前編輯過的時數 ---
+    function syncHoursStateWithSubmission() {
+      if (!state.currentUser) return;
+      const match = state.submissions.find(s => s.userId === state.currentUser.uid && s.week === state.selectedWeek);
+      if (match) {
+        state.hoursInput = { ...match.hours };
+        state.customTasks = [...(match.customHours || [])];
+      } else {
+        state.hoursInput = {};
+        state.customTasks = [];
+      }
+    }
+
+    // --- 計算目前編輯中的累積總工時 ---
+    function calculateCurrentTotal() {
+      let sum = 0;
+      Object.values(state.hoursInput).forEach(val => {
+        if (val) sum += parseFloat(val) || 0;
+      });
+      state.customTasks.forEach(task => {
+        sum += parseFloat(task.hours) || 0;
+      });
+      return sum;
+    }
+
+    // --- 登入畫面下拉連動邏輯 ---
+    function setupLoginInterface() {
+      const deptSelect = document.getElementById('login-dept');
+      const nameSelect = document.getElementById('login-name');
+      const passSection = document.getElementById('login-password-section');
+      const passwordInput = document.getElementById('login-password');
+
+      deptSelect.onchange = function() {
+        const dept = deptSelect.value;
+        nameSelect.innerHTML = '';
+        passSection.classList.add('hidden');
+        passwordInput.value = '';
+
+        if (!dept) {
+          nameSelect.disabled = true;
+          nameSelect.className = "w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-100 focus:outline-none";
+          nameSelect.innerHTML = `<option value="">-- 請先選擇所別 --</option>`;
+          return;
+        }
+
+        // 過濾出該科所的成員
+        const filteredUsers = state.users.filter(u => u.dept === dept);
+        
+        nameSelect.disabled = false;
+        nameSelect.className = "w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none";
+        
+        let optionsHtml = `<option value="">-- 請選擇您的名字 --</option>`;
+        filteredUsers.forEach(u => {
+          optionsHtml += `<option value="${u.uid}">${u.name}</option>`;
+        });
+        nameSelect.innerHTML = optionsHtml;
+      };
+
+      nameSelect.onchange = function() {
+        if (nameSelect.value) {
+          passSection.classList.remove('hidden');
+        } else {
+          passSection.classList.add('hidden');
+        }
+      };
+    }
+
+    // --- 執行登入程序 ---
+    window.handleUserLogin = function() {
+      const nameSelect = document.getElementById('login-name');
+      const passwordInput = document.getElementById('login-password');
+
+      const userId = nameSelect.value;
+      const pwd = passwordInput.value;
+
+      if (!userId) {
+        showToast("請先選擇您的姓名！", "warning");
+        return;
+      }
+      if (!pwd) {
+        showToast("請輸入登入密碼！", "warning");
+        return;
+      }
+
+      const foundUser = state.users.find(u => u.uid === userId);
+      if (!foundUser) {
+        showToast("系統內找不到此成員資料，請聯繫林教授！", "error");
+        return;
+      }
+
+      if (foundUser.password !== pwd) {
+        showToast("登入失敗：您輸入的密碼有誤，請再試一次！", "error");
+        return;
+      }
+
+      // 驗證通過
+      state.currentUser = foundUser;
+      state.activeTab = foundUser.role === 'student' ? 'report' : 'review';
+
+      // 介面切換
+      document.getElementById('login-view').classList.add('hidden');
+      document.getElementById('user-status-bar').classList.remove('hidden');
+      document.getElementById('main-dashboard').classList.remove('hidden');
+
+      document.getElementById('user-status-text').textContent = `👤 目前登入：${foundUser.name} (${foundUser.dept})`;
+
+      // 清除登入欄位殘留資訊
+      passwordInput.value = '';
+
+      showToast(`🎉 歡迎登入，${foundUser.name}！`);
+      onDataLoaded();
+    };
+
+    // --- 執行登出程序 ---
+    window.handleUserLogout = function() {
+      state.currentUser = null;
+      state.hoursInput = {};
+      state.customTasks = [];
+
+      document.getElementById('main-dashboard').classList.add('hidden');
+      document.getElementById('user-status-bar').classList.add('hidden');
+      document.getElementById('login-view').classList.remove('hidden');
+
+      document.getElementById('login-dept').value = '';
+      const nameSelect = document.getElementById('login-name');
+      nameSelect.innerHTML = `<option value="">-- 請先選擇所別 --</option>`;
+      nameSelect.disabled = true;
+      nameSelect.className = "w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-100 focus:outline-none";
+      document.getElementById('login-password-section').classList.add('hidden');
+
+      showToast("您已成功登出系統。");
+    };
+
+    // --- 界面 Tabs 切換配置與動態生成 ---
+    function renderTabs() {
+      if (!state.currentUser) return;
+      const tabContainer = document.getElementById('tab-container');
+      tabContainer.innerHTML = '';
+
+      const tabs = [];
+      if (state.currentUser.role === 'student') {
+        tabs.push({ id: 'report', label: '時數申報填寫' });
+        tabs.push({ id: 'history', label: '申報歷史紀錄' });
+        if (state.activeTab !== 'report' && state.activeTab !== 'history') {
+          state.activeTab = 'report';
+        }
+      } else {
+        tabs.push({ id: 'review', label: `時數回報看板 (${getWeeklySubmissionCount()})` });
+        tabs.push({ id: 'config', label: '計畫與子項目管理' });
+        tabs.push({ id: 'users', label: '成員帳號與密碼管理' }); // 新增的成員管理分頁頁籤
+        tabs.push({ id: 'analytics', label: '投入佔比圖表' });
+        if (state.activeTab !== 'review' && state.activeTab !== 'config' && state.activeTab !== 'users' && state.activeTab !== 'analytics') {
+          state.activeTab = 'review';
+        }
+      }
+
+      tabs.forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = `flex-1 sm:flex-none px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
+          state.activeTab === t.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+        }`;
+        btn.textContent = t.label;
+        btn.onclick = () => {
+          state.activeTab = t.id;
+          renderTabs();
+          renderActiveTab();
+        };
+        tabContainer.appendChild(btn);
+      });
+    }
+
+    // --- 控制分頁 View 容器的顯隱 (更新支援成員管理) ---
+    function renderActiveTab() {
+      // 1. 安全防禦防崩潰機制：如果使用者尚未完成登入程序（state.currentUser 為空），一律安全導向登入視窗並返回，避開 role 屬性讀取錯誤
+      if (!state.currentUser) {
+        document.getElementById('login-view').classList.remove('hidden');
+        document.getElementById('main-dashboard').classList.add('hidden');
+        document.getElementById('user-status-bar').classList.add('hidden');
+        return;
+      }
+
+      document.getElementById('student-report-view').classList.add('hidden');
+      document.getElementById('student-history-view').classList.add('hidden');
+      document.getElementById('teacher-review-view').classList.add('hidden');
+      document.getElementById('teacher-config-view').classList.add('hidden');
+      document.getElementById('teacher-users-view').classList.add('hidden'); // 成員管理容器
+      document.getElementById('teacher-analytics-view').classList.add('hidden');
+
+      if (state.currentUser.role === 'student') {
+        if (state.activeTab === 'report') {
+          document.getElementById('student-report-view').classList.remove('hidden');
+          renderStudentReportPanel();
+        } else if (state.activeTab === 'history') {
+          document.getElementById('student-history-view').classList.remove('hidden');
+          renderStudentHistoryPanel();
+        }
+      } else {
+        if (state.activeTab === 'review') {
+          document.getElementById('teacher-review-view').classList.remove('hidden');
+          renderTeacherReviewPanel();
+        } else if (state.activeTab === 'config') {
+          document.getElementById('teacher-config-view').classList.remove('hidden');
+          renderTeacherConfigPanel();
+        } else if (state.activeTab === 'users') {
+          document.getElementById('teacher-users-view').classList.remove('hidden');
+          renderTeacherUsersPanel();
+        } else if (state.activeTab === 'analytics') {
+          document.getElementById('teacher-analytics-view').classList.remove('hidden');
+          renderTeacherAnalyticsPanel();
+        }
+      }
+    }
+
+    // =========================================================================
+    // 【渲染：學生端申報介面】
+    // =========================================================================
+    function renderStudentReportPanel() {
+      document.getElementById('summary-user-display').textContent = `學號姓名： ${state.currentUser.name}`;
+      const currentTotal = calculateCurrentTotal();
+      document.getElementById('total-hours-badge').textContent = currentTotal;
+
+      const match = state.submissions.find(s => s.userId === state.currentUser.uid && s.week === state.selectedWeek);
+      const statusCard = document.getElementById('submission-status-card');
+      const feedbackCard = document.getElementById('teacher-feedback-card');
+
+      if (match) {
+        statusCard.className = "bg-emerald-50 text-emerald-800 border border-emerald-200 p-3 rounded-lg flex items-start gap-2";
+        statusCard.innerHTML = `
+          <span class="text-lg">📬</span>
+          <div class="text-xs">
+            <div class="font-bold">本週時數已成功送達</div>
+            <p class="text-slate-500 mt-1">最後更新於: ${new Date(match.updatedAt).toLocaleTimeString()}</p>
+            <p class="text-indigo-600 font-medium mt-0.5">單向回報已存檔，您仍可隨時修改並重新送出。</p>
+          </div>
+        `;
+        if (match.feedback) {
+          feedbackCard.classList.remove('hidden');
+          document.getElementById('teacher-feedback-text').textContent = `"${match.feedback}"`;
+        } else {
+          feedbackCard.classList.add('hidden');
+        }
+      } else {
+        statusCard.className = "bg-slate-100 text-slate-600 border border-slate-200 p-3 rounded-lg text-xs font-semibold text-center";
+        statusCard.textContent = "📭 本週尚未建立呈報紀錄";
+        feedbackCard.classList.add('hidden');
+      }
+
+      const container = document.getElementById('project-cards-container');
+      container.innerHTML = '';
+
+      state.projects.forEach(proj => {
+        const colorSet = COLOR_MAPS[proj.color] || COLOR_MAPS.slate;
+        const card = document.createElement('div');
+        card.className = `border ${colorSet.border} rounded-xl overflow-hidden shadow-sm bg-white`;
+
+        let headerHtml = `
+          <div class="p-3 ${colorSet.bg} flex justify-between items-center border-b ${colorSet.border}">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full" style="background-color: ${colorSet.hex}"></span>
+              <h3 class="font-bold text-sm ${colorSet.text}">${proj.name}</h3>
+            </div>
+            <span class="text-[10px] px-2 py-0.5 rounded-full ${colorSet.badge} font-bold">${proj.tasks.length} 個子項目</span>
+          </div>
+        `;
+
+        let listHtml = `<div class="p-3 bg-white divide-y divide-slate-100">`;
+        proj.tasks.forEach(task => {
+          const key = `${proj.id}_${task}`;
+          const currentVal = state.hoursInput[key] || '';
+
+          listHtml += `
+            <div class="py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-slate-50/50 px-2 rounded-lg transition-all">
+              <span class="text-xs font-semibold text-slate-700">${task}</span>
+              <div class="flex items-center gap-2 self-end sm:self-auto">
+                <button type="button" onclick="adjustHour('${proj.id}', '${task}', -0.5)" class="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4" /></svg>
+                </button>
+                <input type="number" min="0" step="0.5" placeholder="0" value="${currentVal}" 
+                  onchange="updateHourInput('${proj.id}', '${task}', this.value)"
+                  class="w-14 text-center border border-slate-300 rounded px-1.5 py-1 text-xs font-bold focus:ring-1 focus:ring-indigo-500 bg-white" />
+                <button type="button" onclick="adjustHour('${proj.id}', '${task}', 0.5)" class="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" /></svg>
+                </button>
+              </div>
+            </div>
+          `;
+        });
+        listHtml += `</div>`;
+
+        let inlineAdderHtml = `
+          <div class="bg-slate-50 border-t border-slate-100 p-2 flex items-center gap-2">
+            <input type="text" id="inline-input-${proj.id}" placeholder="➕ 學生自主新增此計畫子項目..." 
+              class="flex-1 text-[11px] border border-slate-300 rounded px-2.5 py-1 focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-white" />
+            <button type="button" onclick="studentAddProjectTask('${proj.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 py-1.5 rounded shadow-sm transition">
+              新增項目
+            </button>
+          </div>
+        `;
+
+        card.innerHTML = headerHtml + listHtml + inlineAdderHtml;
+        container.appendChild(card);
+      });
+    }
+
+    // --- 學生自主追加子項目動作 ---
+    window.studentAddProjectTask = async function(projectId) {
+      const input = document.getElementById(`inline-input-${projectId}`);
+      const text = input ? input.value : "";
+      if (!text || !text.trim()) {
+        showToast("請先輸入要新增的子項目名稱！", "warning");
+        return;
+      }
+
+      const trimmed = text.trim();
+      const target = state.projects.find(p => p.id === projectId);
+      if (!target) return;
+
+      if (target.tasks.includes(trimmed)) {
+        showToast("該子項目已存在此計畫中！", "warning");
+        return;
+      }
+
+      target.tasks.push(trimmed);
+      onDataLoaded();
+      showToast(`🎉 子項目已在本地建立，正在背景同步至雲端...`);
+
+      if (state.dbConnected) {
+        try {
+          await sendGasPost({
+            action: "updateProjects",
+            projects: state.projects
+          });
+          showToast("☁️ Google Sheet 雲端同步存檔成功！", "success");
+        } catch (err) {
+          console.error(err);
+          showToast("雲端同步計畫失敗，但本地仍會暫時保留", "error");
+        }
+      } else {
+        localStorage.setItem('reporting_html_projects', JSON.stringify(state.projects));
+      }
+    };
+
+    // --- 學生更新單個時數輸入與加減 ---
+    window.updateHourInput = function(projectId, taskName, val) {
+      const num = val === '' ? '' : Math.max(0, parseFloat(val) || 0);
+      const key = `${projectId}_${taskName}`;
+      if (num === '' || num === 0) {
+        delete state.hoursInput[key];
+      } else {
+        state.hoursInput[key] = num;
+      }
+      document.getElementById('total-hours-badge').textContent = calculateCurrentTotal();
+    };
+
+    // --- 調整單個時數加減 ---
+    window.adjustHour = function(projectId, taskName, delta) {
+      const key = `${projectId}_${taskName}`;
+      const currentVal = state.hoursInput[key] || 0;
+      const newVal = Math.max(0, currentVal + delta);
+      updateHourInput(projectId, taskName, newVal);
+      renderStudentReportPanel();
+    };
+
+    // --- 學生送出回報 (單向送出) ---
+    window.submitHours = async function() {
+      const currentTotal = calculateCurrentTotal();
+      if (currentTotal === 0) {
+        showToast("本週回報總時數不能為 0 小時！", "warning");
+        return;
+      }
+
+      const sanitized = {};
+      Object.entries(state.hoursInput).forEach(([k, v]) => {
+        if (v && parseFloat(v) > 0) {
+          sanitized[k] = parseFloat(v);
+        }
+      });
+
+      const submissionData = {
+        userId: state.currentUser.uid,
+        userName: state.currentUser.name,
+        week: state.selectedWeek,
+        hours: sanitized,
+        customHours: state.customTasks,
+        feedback: state.submissions.find(s => s.userId === state.currentUser.uid && s.week === state.selectedWeek)?.feedback || '',
+        totalHours: currentTotal,
+        updatedAt: new Date().toISOString()
+      };
+
+      const docId = `${state.currentUser.uid}_${state.selectedWeek}`;
+
+      const existIdx = state.submissions.findIndex(s => s.id === docId);
+      const localSub = { id: docId, ...submissionData };
+      if (existIdx >= 0) {
+        state.submissions[existIdx] = localSub;
+      } else {
+        state.submissions.push(localSub);
+      }
+      onDataLoaded();
+      showToast("🎉 時數已在本地更新，正在上傳至 Google Sheet 試算表...");
+
+      if (state.dbConnected) {
+        try {
+          await sendGasPost({
+            action: "submitHours",
+            userId: state.currentUser.uid,
+            userName: state.currentUser.name,
+            week: state.selectedWeek,
+            hours: sanitized,
+            customHours: state.customTasks
+          });
+          showToast("☁️ 時數已成功同步寫入雲端！", "success");
+        } catch (err) {
+          console.error(err);
+          showToast("雲端同步時數失敗，將暫存於網頁", "error");
+        }
+      } else {
+        localStorage.setItem('reporting_html_submissions', JSON.stringify(state.submissions));
+      }
+    };
+
+    // =========================================================================
+    // 【渲染：學生端申報歷史】
+    // =========================================================================
+    function renderStudentHistoryPanel() {
+      const tbody = document.getElementById('history-table-body');
+      tbody.innerHTML = '';
+
+      const mine = state.submissions
+        .filter(s => s.userId === state.currentUser.uid)
+        .sort((a, b) => b.week.localeCompare(a.week));
+
+      if (mine.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">目前尚無任何呈報紀錄</td></tr>`;
+        return;
+      }
+
+      mine.forEach(sub => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition-all";
+
+        let summaryText = [];
+        Object.entries(sub.hours || {}).forEach(([k, v]) => {
+          const [projId, task] = k.split('_');
+          const projName = state.projects.find(p => p.id === projId)?.name || projId;
+          summaryText.push(`${projName}(${task}):${v}h`);
+        });
+
+        tr.innerHTML = `
+          <td class="p-3 font-semibold text-indigo-600 text-xs">${sub.week}</td>
+          <td class="p-3 text-xs text-slate-600 max-w-sm truncate" title="${summaryText.join(', ')}">${summaryText.join(', ') || '無'}</td>
+          <td class="p-3 text-center font-bold text-slate-700 text-xs">${sub.totalHours}h</td>
+          <td class="p-3 text-xs text-slate-400">${new Date(sub.updatedAt).toLocaleString()}</td>
+          <td class="p-3 text-xs italic text-indigo-800">${sub.feedback || '<span class="text-slate-300">暫無反饋</span>'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // =========================================================================
+    // 【渲染：教師端時數即時看板】
+    // =========================================================================
+    function renderTeacherReviewPanel() {
+      const listContainer = document.getElementById('submissions-list');
+      listContainer.innerHTML = '';
+
+      const weeklySubs = state.submissions
+        .filter(s => s.week === state.selectedWeek)
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+
+      if (weeklySubs.length === 0) {
+        listContainer.innerHTML = `
+          <div class="text-center py-12 text-slate-400 border border-dashed border-slate-200 rounded-xl">
+            <p class="text-sm font-semibold">本週 (${state.selectedWeek}) 尚無 any 學生送出申報數據</p>
+            <p class="text-xs mt-1">您可以切換上方模擬身份為「學生」來試著送出時數！</p>
+          </div>
+        `;
+        return;
+      }
+
+      weeklySubs.forEach(sub => {
+        const item = document.createElement('div');
+        item.className = "border border-slate-200 rounded-xl p-4 bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all flex flex-col md:flex-row md:items-center justify-between gap-4";
+
+        let tasksBadgeHtml = '';
+        Object.entries(sub.hours || {}).forEach(([key, v]) => {
+          const [projId, task] = key.split('_');
+          const proj = state.projects.find(p => p.id === projId);
+          const colorSet = COLOR_MAPS[proj?.color || 'slate'];
+          tasksBadgeHtml += `
+            <span class="text-[10px] px-2 py-0.5 rounded border ${colorSet.border} ${colorSet.bg} ${colorSet.text} font-bold">
+              ${proj?.name || projId} - ${task}: ${v}h
+            </span>
+          `;
+        });
+        (sub.customHours || []).forEach(c => {
+          tasksBadgeHtml += `
+            <span class="text-[10px] px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-indigo-800 font-bold">
+              自訂追加: ${c.taskName}: ${c.hours}h
+            </span>
+          `;
+        });
+
+        item.innerHTML = `
+          <div>
+            <div class="flex items-center gap-3">
+              <span class="font-bold text-sm text-slate-800">${sub.userName}</span>
+              <span class="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">📬 時數已送達</span>
+              <span class="text-[10px] text-slate-400">${new Date(sub.updatedAt).toLocaleTimeString()} 回報</span>
+            </div>
+            <div class="mt-2.5 flex flex-wrap gap-1.5">
+              ${tasksBadgeHtml || '<span class="text-xs text-slate-400">本週無任何具體細項</span>'}
+            </div>
+            ${sub.feedback ? `
+              <p class="text-xs italic text-indigo-700 bg-indigo-50 border-l-2 border-indigo-500 py-1 px-2.5 mt-2 rounded">
+                <strong>我的反饋註記：</strong> ${sub.feedback}
+              </p>
+            ` : ''}
+          </div>
+          <div class="flex items-center gap-3 shrink-0 self-end md:self-auto">
+            <span class="text-base font-black text-slate-700">共 ${sub.totalHours} 小時</span>
+            <button onclick="openFeedbackModal('${sub.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow-sm">
+              給予反饋意見
+            </button>
+          </div>
+        `;
+        listContainer.appendChild(item);
+      });
+    }
+
+    // --- 反饋留言視窗處理 ---
+    window.openFeedbackModal = function(submissionId) {
+      const sub = state.submissions.find(s => s.id === submissionId);
+      if (!sub) return;
+
+      state.activeModalSubmission = sub;
+      document.getElementById('modal-target-info').textContent = `${sub.userName} (週別 ${sub.week})`;
+      document.getElementById('modal-feedback-textarea').value = sub.feedback || '';
+      document.getElementById('feedback-modal').classList.remove('hidden');
+    };
+
+    window.closeFeedbackModal = function() {
+      document.getElementById('feedback-modal').classList.add('hidden');
+      state.activeModalSubmission = null;
+    };
+
+    window.saveFeedback = async function() {
+      const sub = state.activeModalSubmission;
+      if (!sub) return;
+
+      const fbText = document.getElementById('modal-feedback-textarea').value.trim();
+
+      sub.feedback = fbText;
+      sub.updatedAt = new Date().toISOString();
+      onDataLoaded();
+      showToast("已成功更新反饋！正在同步雲端...");
+      closeFeedbackModal();
+
+      if (state.dbConnected) {
+        try {
+          await sendGasPost({
+            action: "updateFeedback",
+            userId: sub.userId,
+            week: sub.week,
+            feedback: fbText
+          });
+          showToast("☁️ 反饋備註已同步至 Google Sheet 中！", "success");
+        } catch (err) {
+          console.error(err);
+          showToast("反饋同步雲端失敗", "error");
+        }
+      } else {
+        localStorage.setItem('reporting_html_submissions', JSON.stringify(state.submissions));
+      }
+    };
+
+    // =========================================================================
+    // 【渲染：教師端項目自訂配置】
+    // =========================================================================
+    function renderTeacherConfigPanel() {
+      const container = document.getElementById('config-projects-container');
+      container.innerHTML = '';
+
+      state.projects.forEach(proj => {
+        const colorSet = COLOR_MAPS[proj.color] || COLOR_MAPS.slate;
+        const item = document.createElement('div');
+        item.className = "border border-slate-200 rounded-xl p-4 bg-slate-50/50 hover:bg-white transition-all flex flex-col justify-between gap-4";
+
+        let tasksBadges = '';
+        proj.tasks.forEach(t => {
+          tasksBadges += `<span class="text-[10px] px-2.5 py-1 bg-slate-100 rounded text-slate-600 font-bold">${t}</span>`;
+        });
+
+        item.innerHTML = `
+          <div>
+            <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
+              <span class="text-xs font-black ${colorSet.text} flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${colorSet.hex}"></span>
+                ${proj.name}
+              </span>
+              <button onclick="openProjectEditModal('${proj.id}')" class="text-xs text-indigo-600 hover:text-indigo-800 font-bold">
+                ✏️ 編輯
+              </button>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              ${tasksBadges || '<span class="text-xs text-slate-400">目前無任務細項</span>'}
+            </div>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // --- 建立全新計畫項目 ---
+    window.promptCreateProject = async function() {
+      const name = prompt("請輸入全新研究計畫名稱：（例如：科技部專案、新實驗合作）");
+      if (!name || !name.trim()) return;
+
+      const trimmedName = name.trim();
+      const newId = `proj_${Date.now()}`;
+      const colors = ['emerald', 'rose', 'amber', 'sky', 'orange', 'teal', 'purple', 'slate', 'red', 'pink'];
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+      const newProj = {
+        id: newId,
+        name: trimmedName,
+        color: randomColor,
+        tasks: ["主要會議/工作項目"]
+      };
+
+      state.projects.push(newProj);
+      onDataLoaded();
+      showToast(`已在本地建立大計畫：${trimmedName}，正在同步至雲端...`);
+
+      if (state.dbConnected) {
+        try {
+          await sendGasPost({
+            action: "updateProjects",
+            projects: state.projects
+          });
+          showToast("☁️ 新大計畫已成功同步寫入雲端！", "success");
+        } catch (err) {
+          console.error(err);
+          showToast("同步雲端計畫失敗", "error");
+        }
+      } else {
+        localStorage.setItem('reporting_html_projects', JSON.stringify(state.projects));
+      }
+    };
+
+    // --- 編輯計畫 Modal 開關與操作 ---
+    window.openProjectEditModal = function(projectId) {
+      const proj = state.projects.find(p => p.id === projectId);
+      if (!proj) return;
+
+      state.editingProject = JSON.parse(JSON.stringify(proj)); // 深拷貝
+      renderProjectEditModalContent();
+      document.getElementById('project-edit-modal').classList.remove('hidden');
+    };
+
+    window.closeProjectEditModal = function() {
+      document.getElementById('project-edit-modal').classList.add('hidden');
+      state.editingProject = null;
+    };
+
+    function renderProjectEditModalContent() {
+      const content = document.getElementById('project-edit-modal-content');
+      const proj = state.editingProject;
+      if (!proj) return;
+
+      let taskInputsHtml = '';
+      proj.tasks.forEach((t, index) => {
+        taskInputsHtml += `
+          <div class="flex gap-2 items-center">
+            <input type="text" value="${t}" onchange="updateEditingTaskName(${index}, this.value)" 
+              class="flex-1 border border-slate-300 rounded px-2.5 py-1 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
+            <button type="button" onclick="removeEditingTask(${index})" class="text-rose-500 hover:text-rose-700 text-xs font-bold px-1.5">
+              移除
+            </button>
+          </div>
+        `;
+      });
+
+      content.innerHTML = `
+        <div class="space-y-3">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-slate-500">主計畫項目名稱：</label>
+            <input type="text" value="${proj.name}" onchange="state.editingProject.name = this.value"
+              class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-slate-500 block">子任務细項列表：</label>
+            <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+              ${taskInputsHtml}
+            </div>
+            <button type="button" onclick="addEditingTaskPlaceholder()" class="w-full border border-dashed border-slate-300 hover:border-slate-400 text-slate-500 py-1.5 text-xs font-bold rounded-lg transition text-center block mt-2">
+              ➕ 點此追加一個子任務
+            </button>
+          </div>
+
+          <div class="pt-3 flex gap-3">
+            <button type="button" onclick="closeProjectEditModal()" class="w-1/2 border border-slate-300 py-2 rounded-lg text-xs font-semibold text-slate-600 transition">
+              取消
+            </button>
+            <button type="button" onclick="saveProjectEdit()" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg text-xs transition shadow-sm">
+              確認保存修改
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    window.updateEditingTaskName = function(index, value) {
+      if (state.editingProject) {
+        state.editingProject.tasks[index] = value;
+      }
+    };
+
+    window.removeEditingTask = function(index) {
+      if (state.editingProject) {
+        state.editingProject.tasks = state.editingProject.tasks.filter((_, idx) => idx !== index);
+        renderProjectEditModalContent();
+      }
+    };
+
+    window.addEditingTaskPlaceholder = function() {
+      if (state.editingProject) {
+        state.editingProject.tasks.push("新任務名稱");
+        renderProjectEditModalContent();
+      }
+    };
+
+    window.saveProjectEdit = async function() {
+      const proj = state.editingProject;
+      if (!proj) return;
+
+      const idx = state.projects.findIndex(p => p.id === proj.id);
+      if (idx >= 0) {
+        state.projects[idx] = proj;
+      }
+      onDataLoaded();
+      showToast("計畫修改已保存，正在背景同步至雲端...");
+      closeProjectEditModal();
+
+      if (state.dbConnected) {
+        try {
+          await sendGasPost({
+            action: "updateProjects",
+            projects: state.projects
+          });
+          showToast("☁️ 雲端配置修改已同步儲存成功！", "success");
+        } catch (err) {
+          console.error(err);
+          showToast("雲端同步修改失敗", "error");
+        }
+      } else {
+        localStorage.setItem('reporting_html_projects', JSON.stringify(state.projects));
+      }
+    };
+
+    // =========================================================================
+    // 【🌟 渲染：成員帳號與密碼管理面板 🌟】
+    // =========================================================================
+    function renderTeacherUsersPanel() {
+      const tbody = document.getElementById('users-table-body');
+      tbody.innerHTML = '';
+
+      state.users.forEach((u, index) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition-all";
+        tr.innerHTML = `
+          <td class="p-3">
+            <input type="text" value="${u.uid}" onchange="updateUserField(${index}, 'uid', this.value)" 
+              class="border border-slate-300 rounded px-2 py-1 text-xs w-28 font-mono bg-slate-100 text-slate-500 focus:outline-none" readonly />
+          </td>
+          <td class="p-3">
+            <select onchange="updateUserField(${index}, 'dept', this.value)" 
+              class="border border-slate-300 rounded px-2 py-1 text-xs bg-white focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+              <option value="醫工所" ${u.dept === '醫工所' ? 'selected' : ''}>醫工所</option>
+              <option value="人智所" ${u.dept === '人智所' ? 'selected' : ''}>人智所</option>
+              <option value="老師" ${u.dept === '老師' ? 'selected' : ''}>老師</option>
+            </select>
+          </td>
+          <td class="p-3">
+            <input type="text" value="${u.name}" onchange="updateUserField(${index}, 'name', this.value)" 
+              class="border border-slate-300 rounded px-2 py-1 text-xs w-36 font-semibold focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
+          </td>
+          <td class="p-3">
+            <select onchange="updateUserField(${index}, 'role', this.value)" 
+              class="border border-slate-300 rounded px-2 py-1 text-xs bg-white focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+              <option value="student" ${u.role === 'student' ? 'selected' : ''}>學生 (student)</option>
+              <option value="teacher" ${u.role === 'teacher' ? 'selected' : ''}>老師 (teacher)</option>
+            </select>
+          </td>
+          <td class="p-3">
+            <input type="text" value="${u.password}" onchange="updateUserField(${index}, 'password', this.value)" 
+              class="border border-slate-300 rounded px-2 py-1 text-xs w-32 font-mono font-bold focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
+          </td>
+          <td class="p-3 text-center">
+            <button onclick="removeUserRow(${index})" class="text-rose-500 hover:text-rose-700 text-xs font-bold transition">
+              刪除
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    window.updateUserField = function(index, field, value) {
+      if (state.users[index]) {
+        state.users[index][field] = value;
+      }
+    };
+
+    window.addNewUserRow = function() {
+      const randomIdNum = Math.floor(Math.random() * 10000);
+      const newId = `user-${randomIdNum}`;
+      state.users.push({
+        uid: newId,
+        name: "請輸入姓名",
+        role: "student",
+        password: "1234",
+        dept: "醫工所"
+      });
+      renderTeacherUsersPanel();
+      showToast("已在名單最下方新增一名預設成員，請修改好資料後點擊下方儲存按鈕！", "warning");
+    };
+
+    // 避開 confirm 限制的自訂確認刪除
+    let userIndexToDelete = null;
+    window.removeUserRow = function(index) {
+      userIndexToDelete = index;
+      const targetUser = state.users[index];
+      document.getElementById('confirm-delete-text').textContent = `您確定要將「${targetUser.name}」從成員名單中移除嗎？`;
+      document.getElementById('confirm-delete-modal').classList.remove('hidden');
+    };
+
+    window.closeConfirmDeleteModal = function() {
+      document.getElementById('confirm-delete-modal').classList.add('hidden');
+      userIndexToDelete = null;
+    };
+
+    document.getElementById('confirm-delete-btn').onclick = function() {
+      if (userIndexToDelete !== null) {
+        const deletedName = state.users[userIndexToDelete].name;
+        state.users.splice(userIndexToDelete, 1);
+        renderTeacherUsersPanel();
+        showToast(`已於名單中暫時移除「${deletedName}」，請記得點擊下方進行存檔！`, "warning");
+      }
+      window.closeConfirmDeleteModal();
+    };
+
+    window.saveUsersToCloud = async function() {
+      showToast("正在上傳並更新成員密碼列表至雲端，請稍後...");
+      
+      if (state.dbConnected) {
+        try {
+          await sendGasPost({
+            action: "updateUsers",
+            users: state.users
+          });
+          showToast("☁️ Google Sheet 成員資料已成功覆蓋同步！", "success");
+          await loadSheetData(); // 重新抓取並同步最新的前台狀態
+        } catch (err) {
+          console.error(err);
+          showToast("同步成員名單失敗", "error");
+        }
+      } else {
+        localStorage.setItem('reporting_html_users', JSON.stringify(state.users));
+        setupLoginInterface(); // 同步重整登入下拉清單
+        showToast("🎉 [本地模式] 成員修改名單已保存至快取中！");
+      }
+    };
+
+    // =========================================================================
+    // 【渲染：教師端數據統計與圖表】
+    // =========================================================================
+    function renderTeacherAnalyticsPanel() {
+      const memberList = document.getElementById('member-analytics-list');
+      const projectList = document.getElementById('project-analytics-list');
+
+      memberList.innerHTML = '';
+      projectList.innerHTML = '';
+
+      state.users.filter(u => u.role === 'student').forEach(user => {
+        const sub = state.submissions.find(s => s.userId === user.uid && s.week === state.selectedWeek);
+        const hrs = sub ? sub.totalHours : 0;
+        const percentage = Math.min(100, (hrs / 40) * 100);
+
+        const row = document.createElement('div');
+        row.className = "space-y-1.5";
+        row.innerHTML = `
+          <div class="flex justify-between text-xs text-slate-600 font-bold">
+            <span>${user.name} (${user.dept})</span>
+            <span>${hrs} 小時</span>
+          </div>
+          <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+            <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+          </div>
+        `;
+        memberList.appendChild(row);
+      });
+
+      state.projects.forEach(proj => {
+        let projTotal = 0;
+        state.submissions.filter(s => s.week === state.selectedWeek).forEach(sub => {
+          Object.entries(sub.hours || {}).forEach(([k, v]) => {
+            if (k.startsWith(proj.id)) {
+              projTotal += parseFloat(v) || 0;
+            }
+          });
+        });
+
+        if (projTotal === 0) return;
+
+        const percentage = Math.min(100, (projTotal / 50) * 100);
+        const row = document.createElement('div');
+        row.className = "space-y-1.5";
+        row.innerHTML = `
+          <div class="flex justify-between text-xs text-slate-600 font-bold">
+            <span>${proj.name}</span>
+            <span>共累計投入 ${projTotal} 小時</span>
+          </div>
+          <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+            <div class="h-full bg-indigo-500 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+          </div>
+        `;
+        projectList.appendChild(row);
+      });
+
+      if (projectList.children.length === 0) {
+        projectList.innerHTML = `<p class="text-center text-xs py-6 text-slate-400">目前本週尚無任何計畫專案被分配到工時</p>`;
+      }
+    }
+
+    // =========================================================================
+    // 【匯出：時數數據 CSV】
+    // =========================================================================
+    window.exportToCSV = function() {
+      let headers = ['週別', '姓名', '項目與子任務', '申報時數', '送出日期'];
+      let rows = [];
+
+      const weeklySubs = state.submissions.filter(s => s.week === state.selectedWeek);
+
+      weeklySubs.forEach(sub => {
+        Object.entries(sub.hours || {}).forEach(([key, val]) => {
+          const [projId, task] = key.split('_');
+          const projName = state.projects.find(p => p.id === projId)?.name || projId;
+          rows.push([sub.week, sub.userName, `${projName} - ${task}`, val, new Date(sub.updatedAt).toLocaleDateString()]);
+        });
+        (sub.customHours || []).forEach(item => {
+          rows.push([sub.week, sub.userName, `自訂追加項目 - ${item.taskName}`, item.hours, new Date(sub.updatedAt).toLocaleDateString()]);
+        });
+      });
+
+      if (rows.length === 0) {
+        showToast("本週尚無任何填報紀錄可供導出！", "warning");
+        return;
+      }
+
+      let csvContent = "\uFEFF";
+      csvContent += headers.join(",") + "\n";
+      rows.forEach(r => {
+        csvContent += r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",") + "\n";
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `研究室週報時數彙整_${state.selectedWeek}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("🎉 本週 CSV 時數報表已成功下載！");
+    };
+
+    function getWeeklySubmissionCount() {
+      return state.submissions.filter(s => s.week === state.selectedWeek).length;
+    }
+
+    // --- 程式初始化進入點 ---
+    window.addEventListener('DOMContentLoaded', () => {
+      initCurrentWeek(); // 初始化當前週別與日期輸入框
+      loadSheetData();   // 載入 Google 試算表或本地快取的最新資料
+    });
+  </script>
+</body>
+</html>
