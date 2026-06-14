@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>研究室時數單向申報平台</title>
+  <title>研究室時數回報平台</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts -->
@@ -39,8 +39,7 @@
           </svg>
         </div>
         <div>
-          <h1 class="text-lg font-bold tracking-wide">研究室時數申報平台</h1>
-          <p class="text-xs text-indigo-300">學生單向直接回報 ✖ 老師即時查閱與項目自訂</p>
+          <h1 class="text-lg font-bold tracking-wide">每周時數申報平台</h1>
         </div>
       </div>
 
@@ -64,13 +63,14 @@
     </div>
   </div>
 
+
   <!-- 主內容容器 -->
   <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
 
     <!-- ================= 0. 登入驗證頁面 (未登入時呈現) ================= -->
     <div id="login-view" class="max-w-md mx-auto my-12 bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
       <div class="bg-indigo-600 text-white p-6 text-center">
-        <h2 class="text-xl font-bold">👤 研究室申報登入</h2>
+        <h2 class="text-xl font-bold">👤 時報登入</h2>
         <p class="text-xs text-indigo-100 mt-1">請選擇您的所別與姓名進行驗證登入</p>
       </div>
       <div class="p-6 space-y-4">
@@ -91,7 +91,7 @@
         </div>
         <div id="login-password-section" class="hidden">
           <label class="text-xs font-bold text-slate-500 block mb-1">3. 輸入登入密碼</label>
-          <input type="password" id="login-password" placeholder="請輸入密碼 (預設為大小寫英文+數字)..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          <input type="password" id="login-password" placeholder="請輸入密碼 (大小寫英文+數字)..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
         </div>
         <button id="login-btn" onclick="handleUserLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-sm transition shadow-sm mt-2">
           確認登入
@@ -321,7 +321,7 @@
         <h3 class="font-bold text-sm">編輯計畫與子項目</h3>
         <button onclick="closeProjectEditModal()" class="text-slate-400 hover:text-white">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" strokeLinejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
@@ -353,7 +353,7 @@
 
   <!-- ================= 業務狀態邏輯 (JavaScript) ================= -->
   <script type="module">
-    // --- 定義全域提示視窗函式 (修復 Reference ＆ TypeError) ---
+    // --- 定義全域提示視窗函式 ---
     function showToast(message, type = 'success') {
       const container = document.getElementById('toast-container');
       if (!container) return;
@@ -376,8 +376,20 @@
     }
     window.showToast = showToast;
 
+    // --- 初始化目前週別的函式 ---
+    function initCurrentWeek() {
+      const now = new Date();
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      const pastDaysOfYear = (now - startOfYear) / 86400000;
+      const weekNum = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+      state.selectedWeek = `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+      const weekPicker = document.getElementById('week-picker');
+      if (weekPicker) {
+        weekPicker.value = state.selectedWeek;
+      }
+    }
+
     // --- 🚨 GOOGLE SHEET APPS SCRIPT WEB APP 網址設定 🚨 ---
-    // 請依照說明步驟，將您部署後的 Apps Script「網頁應用程式 URL」貼在下方雙引號中：
     const GAS_WEB_APP_URL = "https://lab-return-platform.janice-064.workers.dev/"; 
 
     // --- 預設預載項目結構 (若無法連線 Google Sheet 時的備用) ---
@@ -458,6 +470,9 @@
       }
     ];
 
+    // 初始名單資料 (安全考量：已移除前端敏感名單，僅保留空陣列。)
+    const INITIAL_USERS = [];
+
     const COLOR_MAPS = {
       emerald: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-800", badge: "bg-emerald-100 text-emerald-800", hex: "#10b981" },
       rose: { bg: "bg-rose-50", border: "border-rose-200", text: "text-rose-800", badge: "bg-rose-100 text-rose-800", hex: "#f43f5e" },
@@ -487,17 +502,7 @@
       activeModalSubmission: null
     };
 
-    // --- 初始化目前週別的函式 ---
-    function initCurrentWeek() {
-      const now = new Date();
-      const startOfYear = new Date(now.getFullYear(), 0, 1);
-      const pastDaysOfYear = (now - startOfYear) / 86400000;
-      const weekNum = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
-      state.selectedWeek = `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
-      document.getElementById('week-picker').value = state.selectedWeek;
-    }
-
-    // --- 🚨 雲端輔助 POST 請求發送器 (解決 GAS 重新導向的 CORS 限制錯誤) 🚨 ---
+    // --- 🚨 雲端輔助 POST 請求發送器 🚨 ---
     async function sendGasPost(payload) {
       if (!GAS_WEB_APP_URL) return;
       await fetch(GAS_WEB_APP_URL, {
@@ -605,7 +610,7 @@
       return sum;
     }
 
-    // --- 登入畫面下拉連動邏輯 ---
+    // --- 登入畫面下拉連動與防呆連線診斷邏輯 ---
     function setupLoginInterface() {
       const deptSelect = document.getElementById('login-dept');
       const nameSelect = document.getElementById('login-name');
@@ -629,6 +634,16 @@
         const filteredUsers = state.users.filter(u => u.dept === dept);
         
         nameSelect.disabled = false;
+        
+        // 核心修正：若篩選後的人數為 0，代表雲端並未回傳名單
+        if (filteredUsers.length === 0) {
+          nameSelect.className = "w-full border border-rose-300 rounded-lg p-2.5 text-sm bg-rose-50 text-rose-800 focus:outline-none";
+          nameSelect.innerHTML = `
+            <option value="">⚠️ 查無此所別成員，請確認 GAS 是否已部署為「新版本」</option>
+          `;
+          return;
+        }
+
         nameSelect.className = "w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none";
         
         let optionsHtml = `<option value="">-- 請選擇您的名字 --</option>`;
@@ -639,7 +654,7 @@
       };
 
       nameSelect.onchange = function() {
-        if (nameSelect.value) {
+        if (nameSelect.value && nameSelect.value !== "warning") {
           passSection.classList.remove('hidden');
         } else {
           passSection.classList.add('hidden');
@@ -729,7 +744,7 @@
       } else {
         tabs.push({ id: 'review', label: `時數回報看板 (${getWeeklySubmissionCount()})` });
         tabs.push({ id: 'config', label: '計畫與子項目管理' });
-        tabs.push({ id: 'users', label: '成員帳號與密碼管理' }); // 新增的成員管理分頁頁籤
+        tabs.push({ id: 'users', label: '成員帳號與密碼管理' }); 
         tabs.push({ id: 'analytics', label: '投入佔比圖表' });
         if (state.activeTab !== 'review' && state.activeTab !== 'config' && state.activeTab !== 'users' && state.activeTab !== 'analytics') {
           state.activeTab = 'review';
@@ -751,9 +766,8 @@
       });
     }
 
-    // --- 控制分頁 View 容器的顯隱 (更新支援成員管理) ---
+    // --- 控制分頁 View 容器的顯隱 ---
     function renderActiveTab() {
-      // 1. 安全防禦防崩潰機制：如果使用者尚未完成登入程序（state.currentUser 為空），一律安全導向登入視窗並返回，避開 role 屬性讀取錯誤
       if (!state.currentUser) {
         document.getElementById('login-view').classList.remove('hidden');
         document.getElementById('main-dashboard').classList.add('hidden');
@@ -765,7 +779,7 @@
       document.getElementById('student-history-view').classList.add('hidden');
       document.getElementById('teacher-review-view').classList.add('hidden');
       document.getElementById('teacher-config-view').classList.add('hidden');
-      document.getElementById('teacher-users-view').classList.add('hidden'); // 成員管理容器
+      document.getElementById('teacher-users-view').classList.add('hidden'); 
       document.getElementById('teacher-analytics-view').classList.add('hidden');
 
       if (state.currentUser.role === 'student') {
@@ -934,15 +948,6 @@
       document.getElementById('total-hours-badge').textContent = calculateCurrentTotal();
     };
 
-    // --- 調整單個時數加減 ---
-    window.adjustHour = function(projectId, taskName, delta) {
-      const key = `${projectId}_${taskName}`;
-      const currentVal = state.hoursInput[key] || 0;
-      const newVal = Math.max(0, currentVal + delta);
-      updateHourInput(projectId, taskName, newVal);
-      renderStudentReportPanel();
-    };
-
     // --- 學生送出回報 (單向送出) ---
     window.submitHours = async function() {
       const currentTotal = calculateCurrentTotal();
@@ -1091,7 +1096,7 @@
               <span class="text-[10px] text-slate-400">${new Date(sub.updatedAt).toLocaleTimeString()} 回報</span>
             </div>
             <div class="mt-2.5 flex flex-wrap gap-1.5">
-              ${tasksBadgeHtml || '<span class="text-xs text-slate-400">本週無任何具體細項</span>'}
+              ${tasksBadgeHtml || '<span class="text-xs text-slate-400">本週無 any 具體細項</span>'}
             </div>
             ${sub.feedback ? `
               <p class="text-xs italic text-indigo-700 bg-indigo-50 border-l-2 border-indigo-500 py-1 px-2.5 mt-2 rounded">
@@ -1551,7 +1556,7 @@
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `研究室週報時數彙整_${state.selectedWeek}.csv`);
+      link.setAttribute("download", `科研項目週報時數彙整_${state.selectedWeek}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
