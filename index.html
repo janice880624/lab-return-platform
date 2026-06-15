@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>研究室時數回報平台</title>
+  <title>實驗室時數單向申報平台</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts -->
@@ -39,7 +39,7 @@
           </svg>
         </div>
         <div>
-          <h1 class="text-lg font-bold tracking-wide">每周時數申報平台</h1>
+          <h1 class="text-lg font-bold tracking-wide">實驗室時數申報平台</h1>
         </div>
       </div>
 
@@ -62,15 +62,13 @@
       </button>
     </div>
   </div>
-
-
   <!-- 主內容容器 -->
   <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
 
     <!-- ================= 0. 登入驗證頁面 (未登入時呈現) ================= -->
     <div id="login-view" class="max-w-md mx-auto my-12 bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
       <div class="bg-indigo-600 text-white p-6 text-center">
-        <h2 class="text-xl font-bold">👤 時報登入</h2>
+        <h2 class="text-xl font-bold">👤 實驗室申報登入</h2>
         <p class="text-xs text-indigo-100 mt-1">請選擇您的所別與姓名進行驗證登入</p>
       </div>
       <div class="p-6 space-y-4">
@@ -91,7 +89,7 @@
         </div>
         <div id="login-password-section" class="hidden">
           <label class="text-xs font-bold text-slate-500 block mb-1">3. 輸入登入密碼</label>
-          <input type="password" id="login-password" placeholder="請輸入密碼 (大小寫英文+數字)..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          <input type="password" id="login-password" placeholder="請輸入密碼 (大小寫英文 + 數字)..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
         </div>
         <button id="login-btn" onclick="handleUserLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-sm transition shadow-sm mt-2">
           確認登入
@@ -103,10 +101,16 @@
     <div id="main-dashboard" class="space-y-6 hidden">
       <!-- 全局控制列：選擇週別與切換分頁 -->
       <div class="bg-white rounded-xl shadow-sm p-4 flex flex-col sm:flex-row justify-between items-center gap-4 border border-slate-200">
-        <!-- 週別選擇器 -->
-        <div class="flex items-center gap-3 w-full sm:w-auto">
-          <label class="text-sm font-semibold text-slate-600 shrink-0">📅 選擇週別：</label>
-          <input type="week" id="week-picker" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none w-full sm:w-auto bg-slate-50" />
+        <!-- 週別與日期區間選擇器 -->
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+          <div class="flex items-center gap-3 w-full sm:w-auto">
+            <label class="text-sm font-semibold text-slate-600 shrink-0">📅 選擇週別：</label>
+            <input type="week" id="week-picker" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none w-full sm:w-auto bg-slate-50" />
+          </div>
+          <!-- 動態計算的時間區段標籤 -->
+          <span id="week-range-display" class="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-lg shrink-0 text-center sm:text-left">
+            計算中...
+          </span>
         </div>
 
         <!-- 分頁標籤 -->
@@ -225,7 +229,7 @@
           <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
             <div>
               <h2 class="text-lg font-bold text-slate-800">👥 實驗室成員帳號與密碼管理</h2>
-              <p class="text-xs text-slate-400 mt-1">此處名單與 Google Sheet 的 Users 工作表即時同步。您可以直接修改所別、姓名或密碼，並一鍵同步儲存！</p>
+              <p class="text-xs text-slate-400 mt-1">此處名單與 Google Sheet 的 Users 工作表即時同步。您可以直接修改所別、姓名 or 密碼，並一鍵同步儲存！</p>
             </div>
             <button onclick="addNewUserRow()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 rounded-lg transition shadow-sm">
               ➕ 新增實驗室成員
@@ -321,7 +325,7 @@
         <h3 class="font-bold text-sm">編輯計畫與子項目</h3>
         <button onclick="closeProjectEditModal()" class="text-slate-400 hover:text-white">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            <path stroke-linecap="round" strokeLinejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
@@ -349,6 +353,9 @@
   <!-- 頁尾 -->
   <footer class="bg-slate-900 text-slate-500 py-6 text-center text-xs border-t border-slate-800 shrink-0">
     <p>© 2026 實驗室時數填報平台. All Rights Reserved.</p>
+    <p class="mt-1 text-slate-600">
+      運動科學暨運動防護實驗室 • 動作診斷暨復健工程實驗室
+    </p>
   </footer>
 
   <!-- ================= 業務狀態邏輯 (JavaScript) ================= -->
@@ -375,6 +382,31 @@
       }, 3000);
     }
     window.showToast = showToast;
+
+    // --- 定義週日期區間計算輔助函式 ---
+    function getWeekDateRange(weekStr) {
+      if (!weekStr) return "";
+      const match = weekStr.match(/^(\d{4})-W(\d{2})$/);
+      if (!match) return "";
+      const year = parseInt(match[1], 10);
+      const week = parseInt(match[2], 10);
+
+      // 找尋當年的第一個星期四 (ISO 標準周判定)
+      const jan4 = new Date(year, 0, 4);
+      const jan4Day = jan4.getDay();
+      const thursdayOffset = 4 - (jan4Day === 0 ? 7 : jan4Day);
+      const firstThursday = new Date(jan4.getTime() + thursdayOffset * 24 * 60 * 60 * 1000);
+
+      // 目標週的星期四
+      const targetThursday = new Date(firstThursday.getTime() + (week - 1) * 7 * 24 * 60 * 60 * 1000);
+
+      // 計算 Monday 與 Sunday 的日期
+      const monday = new Date(targetThursday.getTime() - 3 * 24 * 60 * 60 * 1000);
+      const sunday = new Date(targetThursday.getTime() + 3 * 24 * 60 * 60 * 1000);
+
+      const formatDate = (d) => `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+      return `${formatDate(monday)} ~ ${formatDate(sunday)}`;
+    }
 
     // --- 初始化目前週別的函式 ---
     function initCurrentWeek() {
@@ -470,7 +502,7 @@
       }
     ];
 
-    // 初始名單資料 (安全考量：已移除前端敏感名單，僅保留空陣列。)
+    // 初始名單資料 (安全考量：已安全隔離，不暴露於前端代碼)
     const INITIAL_USERS = [];
 
     const COLOR_MAPS = {
@@ -513,7 +545,6 @@
       });
     }
 
-    // --- 載入 Google Sheet 資料 ---
     async function loadSheetData() {
       if (!GAS_WEB_APP_URL) {
         setupLocalStorageFallback();
@@ -583,6 +614,12 @@
       syncHoursStateWithSubmission();
       renderTabs();
       renderActiveTab();
+      
+      // 更新週別日期區間顯示
+      const weekRangeDisplay = document.getElementById('week-range-display');
+      if (weekRangeDisplay) {
+        weekRangeDisplay.textContent = getWeekDateRange(state.selectedWeek) || "計算中...";
+      }
     }
 
     // --- 當切換週別或人員，載入先前編輯過的時數 ---
@@ -663,7 +700,7 @@
     }
 
     // --- 執行登入程序 ---
-    window.handleUserLogin = function() {
+    function handleUserLogin() {
       const nameSelect = document.getElementById('login-name');
       const passwordInput = document.getElementById('login-password');
 
@@ -706,10 +743,10 @@
 
       showToast(`🎉 歡迎登入，${foundUser.name}！`);
       onDataLoaded();
-    };
+    }
 
     // --- 執行登出程序 ---
-    window.handleUserLogout = function() {
+    function handleUserLogout() {
       state.currentUser = null;
       state.hoursInput = {};
       state.customTasks = [];
@@ -726,9 +763,9 @@
       document.getElementById('login-password-section').classList.add('hidden');
 
       showToast("您已成功登出系統。");
-    };
+    }
 
-    // --- 界面 Tabs 切換配置與動態生成 ---
+    // --- 頁籤動態建構渲染 ---
     function renderTabs() {
       if (!state.currentUser) return;
       const tabContainer = document.getElementById('tab-container');
@@ -899,7 +936,7 @@
     }
 
     // --- 學生自主追加子項目動作 ---
-    window.studentAddProjectTask = async function(projectId) {
+    function studentAddProjectTask(projectId) {
       const input = document.getElementById(`inline-input-${projectId}`);
       const text = input ? input.value : "";
       if (!text || !text.trim()) {
@@ -921,23 +958,21 @@
       showToast(`🎉 子項目已在本地建立，正在背景同步至雲端...`);
 
       if (state.dbConnected) {
-        try {
-          await sendGasPost({
-            action: "updateProjects",
-            projects: state.projects
-          });
-          showToast("☁️ Google Sheet 雲端同步存檔成功！", "success");
-        } catch (err) {
+        sendGasPost({
+          action: "updateProjects",
+          projects: state.projects
+        }).then(() => {
+          showToast(`☁️ Google Sheet 雲端同步存檔成功！`, "success");
+        }).catch(err => {
           console.error(err);
           showToast("雲端同步計畫失敗，但本地仍會暫時保留", "error");
-        }
+        });
       } else {
         localStorage.setItem('reporting_html_projects', JSON.stringify(state.projects));
       }
-    };
+    }
 
-    // --- 學生更新單個時數輸入與加減 ---
-    window.updateHourInput = function(projectId, taskName, val) {
+    function updateHourInput(projectId, taskName, val) {
       const num = val === '' ? '' : Math.max(0, parseFloat(val) || 0);
       const key = `${projectId}_${taskName}`;
       if (num === '' || num === 0) {
@@ -946,10 +981,18 @@
         state.hoursInput[key] = num;
       }
       document.getElementById('total-hours-badge').textContent = calculateCurrentTotal();
-    };
+    }
+
+    function adjustHour(projectId, taskName, delta) {
+      const key = `${projectId}_${taskName}`;
+      const currentVal = state.hoursInput[key] || 0;
+      const newVal = Math.max(0, currentVal + delta);
+      updateHourInput(projectId, taskName, newVal);
+      renderStudentReportPanel();
+    }
 
     // --- 學生送出回報 (單向送出) ---
-    window.submitHours = async function() {
+    function submitHours() {
       const currentTotal = calculateCurrentTotal();
       if (currentTotal === 0) {
         showToast("本週回報總時數不能為 0 小時！", "warning");
@@ -987,24 +1030,23 @@
       showToast("🎉 時數已在本地更新，正在上傳至 Google Sheet 試算表...");
 
       if (state.dbConnected) {
-        try {
-          await sendGasPost({
-            action: "submitHours",
-            userId: state.currentUser.uid,
-            userName: state.currentUser.name,
-            week: state.selectedWeek,
-            hours: sanitized,
-            customHours: state.customTasks
-          });
+        sendGasPost({
+          action: "submitHours",
+          userId: state.currentUser.uid,
+          userName: state.currentUser.name,
+          week: state.selectedWeek,
+          hours: sanitized,
+          customHours: state.customTasks
+        }).then(() => {
           showToast("☁️ 時數已成功同步寫入雲端！", "success");
-        } catch (err) {
+        }).catch(err => {
           console.error(err);
           showToast("雲端同步時數失敗，將暫存於網頁", "error");
-        }
+        });
       } else {
         localStorage.setItem('reporting_html_submissions', JSON.stringify(state.submissions));
       }
-    };
+    }
 
     // =========================================================================
     // 【渲染：學生端申報歷史】
@@ -1073,7 +1115,8 @@
         Object.entries(sub.hours || {}).forEach(([key, v]) => {
           const [projId, task] = key.split('_');
           const proj = state.projects.find(p => p.id === projId);
-          const colorSet = COLOR_MAPS[proj?.color || 'slate'];
+          // 🚀 安全色彩解析機制：防止因 `proj.color` 為不支援的自訂樣式（如黃色、藍色等）導致 undefined。
+          const colorSet = COLOR_MAPS[proj?.color] || COLOR_MAPS.slate;
           tasksBadgeHtml += `
             <span class="text-[10px] px-2 py-0.5 rounded border ${colorSet.border} ${colorSet.bg} ${colorSet.text} font-bold">
               ${proj?.name || projId} - ${task}: ${v}h
@@ -1096,7 +1139,7 @@
               <span class="text-[10px] text-slate-400">${new Date(sub.updatedAt).toLocaleTimeString()} 回報</span>
             </div>
             <div class="mt-2.5 flex flex-wrap gap-1.5">
-              ${tasksBadgeHtml || '<span class="text-xs text-slate-400">本週無 any 具體細項</span>'}
+              ${tasksBadgeHtml || '<span class="text-xs text-slate-400">本週無任何具體細項</span>'}
             </div>
             ${sub.feedback ? `
               <p class="text-xs italic text-indigo-700 bg-indigo-50 border-l-2 border-indigo-500 py-1 px-2.5 mt-2 rounded">
@@ -1116,7 +1159,7 @@
     }
 
     // --- 反饋留言視窗處理 ---
-    window.openFeedbackModal = function(submissionId) {
+    function openFeedbackModal(submissionId) {
       const sub = state.submissions.find(s => s.id === submissionId);
       if (!sub) return;
 
@@ -1124,14 +1167,14 @@
       document.getElementById('modal-target-info').textContent = `${sub.userName} (週別 ${sub.week})`;
       document.getElementById('modal-feedback-textarea').value = sub.feedback || '';
       document.getElementById('feedback-modal').classList.remove('hidden');
-    };
+    }
 
-    window.closeFeedbackModal = function() {
+    function closeFeedbackModal() {
       document.getElementById('feedback-modal').classList.add('hidden');
       state.activeModalSubmission = null;
-    };
+    }
 
-    window.saveFeedback = async function() {
+    function saveFeedback() {
       const sub = state.activeModalSubmission;
       if (!sub) return;
 
@@ -1144,22 +1187,21 @@
       closeFeedbackModal();
 
       if (state.dbConnected) {
-        try {
-          await sendGasPost({
-            action: "updateFeedback",
-            userId: sub.userId,
-            week: sub.week,
-            feedback: fbText
-          });
+        sendGasPost({
+          action: "updateFeedback",
+          userId: sub.userId,
+          week: sub.week,
+          feedback: fbText
+        }).then(() => {
           showToast("☁️ 反饋備註已同步至 Google Sheet 中！", "success");
-        } catch (err) {
+        }).catch(err => {
           console.error(err);
           showToast("反饋同步雲端失敗", "error");
-        }
+        });
       } else {
         localStorage.setItem('reporting_html_submissions', JSON.stringify(state.submissions));
       }
-    };
+    }
 
     // =========================================================================
     // 【渲染：教師端項目自訂配置】
@@ -1198,8 +1240,8 @@
       });
     }
 
-    // --- 建立全新計畫項目 ---
-    window.promptCreateProject = async function() {
+    // --- 建立全新計畫項目 (採用 🚀 Optimistic UI 樂觀渲染技術) ---
+    async function promptCreateProject() {
       const name = prompt("請輸入全新研究計畫名稱：（例如：科技部專案、新實驗合作）");
       if (!name || !name.trim()) return;
 
@@ -1215,40 +1257,42 @@
         tasks: ["主要會議/工作項目"]
       };
 
+      // 1. 🚀 樂觀更新：立刻將新計畫加入本地 state 並重新渲染 UI，秒級響應！
       state.projects.push(newProj);
       onDataLoaded();
       showToast(`已在本地建立大計畫：${trimmedName}，正在同步至雲端...`);
 
+      // 2. ☁️ 背景異步寫入 Google Sheet，不再呼叫 loadSheetData() 避免延遲與覆蓋衝突！
       if (state.dbConnected) {
         try {
           await sendGasPost({
             action: "updateProjects",
             projects: state.projects
           });
-          showToast("☁️ 新大計畫已成功同步寫入雲端！", "success");
+          showToast(`☁️ 新大計畫「${trimmedName}」已成功同步至 Google Sheet！`, "success");
         } catch (err) {
           console.error(err);
-          showToast("同步雲端計畫失敗", "error");
+          showToast("同步雲端計畫失敗，但本地仍會暫時保留", "error");
         }
       } else {
         localStorage.setItem('reporting_html_projects', JSON.stringify(state.projects));
       }
-    };
+    }
 
     // --- 編輯計畫 Modal 開關與操作 ---
-    window.openProjectEditModal = function(projectId) {
+    function openProjectEditModal(projectId) {
       const proj = state.projects.find(p => p.id === projectId);
       if (!proj) return;
 
       state.editingProject = JSON.parse(JSON.stringify(proj)); // 深拷貝
       renderProjectEditModalContent();
       document.getElementById('project-edit-modal').classList.remove('hidden');
-    };
+    }
 
-    window.closeProjectEditModal = function() {
+    function closeProjectEditModal() {
       document.getElementById('project-edit-modal').classList.add('hidden');
       state.editingProject = null;
-    };
+    }
 
     function renderProjectEditModalContent() {
       const content = document.getElementById('project-edit-modal-content');
@@ -1298,27 +1342,27 @@
       `;
     }
 
-    window.updateEditingTaskName = function(index, value) {
+    function updateEditingTaskName(index, value) {
       if (state.editingProject) {
         state.editingProject.tasks[index] = value;
       }
-    };
+    }
 
-    window.removeEditingTask = function(index) {
+    function removeEditingTask(index) {
       if (state.editingProject) {
         state.editingProject.tasks = state.editingProject.tasks.filter((_, idx) => idx !== index);
         renderProjectEditModalContent();
       }
-    };
+    }
 
-    window.addEditingTaskPlaceholder = function() {
+    function addEditingTaskPlaceholder() {
       if (state.editingProject) {
         state.editingProject.tasks.push("新任務名稱");
         renderProjectEditModalContent();
       }
-    };
+    }
 
-    window.saveProjectEdit = async function() {
+    function saveProjectEdit() {
       const proj = state.editingProject;
       if (!proj) return;
 
@@ -1331,20 +1375,19 @@
       closeProjectEditModal();
 
       if (state.dbConnected) {
-        try {
-          await sendGasPost({
-            action: "updateProjects",
-            projects: state.projects
-          });
+        sendGasPost({
+          action: "updateProjects",
+          projects: state.projects
+        }).then(() => {
           showToast("☁️ 雲端配置修改已同步儲存成功！", "success");
-        } catch (err) {
+        }).catch(err => {
           console.error(err);
           showToast("雲端同步修改失敗", "error");
-        }
+        });
       } else {
         localStorage.setItem('reporting_html_projects', JSON.stringify(state.projects));
       }
-    };
+    }
 
     // =========================================================================
     // 【🌟 渲染：成員帳號與密碼管理面板 🌟】
@@ -1394,13 +1437,13 @@
       });
     }
 
-    window.updateUserField = function(index, field, value) {
+    function updateUserField(index, field, value) {
       if (state.users[index]) {
         state.users[index][field] = value;
       }
-    };
+    }
 
-    window.addNewUserRow = function() {
+    function addNewUserRow() {
       const randomIdNum = Math.floor(Math.random() * 10000);
       const newId = `user-${randomIdNum}`;
       state.users.push({
@@ -1412,21 +1455,21 @@
       });
       renderTeacherUsersPanel();
       showToast("已在名單最下方新增一名預設成員，請修改好資料後點擊下方儲存按鈕！", "warning");
-    };
+    }
 
-    // 避開 confirm 限制的自訂確認刪除
+    // 避開 confirm 限制 of 自訂確認刪除
     let userIndexToDelete = null;
-    window.removeUserRow = function(index) {
+    function removeUserRow(index) {
       userIndexToDelete = index;
       const targetUser = state.users[index];
       document.getElementById('confirm-delete-text').textContent = `您確定要將「${targetUser.name}」從成員名單中移除嗎？`;
       document.getElementById('confirm-delete-modal').classList.remove('hidden');
-    };
+    }
 
-    window.closeConfirmDeleteModal = function() {
+    function closeConfirmDeleteModal() {
       document.getElementById('confirm-delete-modal').classList.add('hidden');
       userIndexToDelete = null;
-    };
+    }
 
     document.getElementById('confirm-delete-btn').onclick = function() {
       if (userIndexToDelete !== null) {
@@ -1435,30 +1478,29 @@
         renderTeacherUsersPanel();
         showToast(`已於名單中暫時移除「${deletedName}」，請記得點擊下方進行存檔！`, "warning");
       }
-      window.closeConfirmDeleteModal();
+      closeConfirmDeleteModal();
     };
 
-    window.saveUsersToCloud = async function() {
+    function saveUsersToCloud() {
       showToast("正在上傳並更新成員密碼列表至雲端，請稍後...");
       
       if (state.dbConnected) {
-        try {
-          await sendGasPost({
-            action: "updateUsers",
-            users: state.users
-          });
+        sendGasPost({
+          action: "updateUsers",
+          users: state.users
+        }).then(() => {
           showToast("☁️ Google Sheet 成員資料已成功覆蓋同步！", "success");
-          await loadSheetData(); // 重新抓取並同步最新的前台狀態
-        } catch (err) {
+          loadSheetData(); // 重新抓取並同步最新的前台狀態
+        }).catch(err => {
           console.error(err);
           showToast("同步成員名單失敗", "error");
-        }
+        });
       } else {
         localStorage.setItem('reporting_html_users', JSON.stringify(state.users));
         setupLoginInterface(); // 同步重整登入下拉清單
         showToast("🎉 [本地模式] 成員修改名單已保存至快取中！");
       }
-    };
+    }
 
     // =========================================================================
     // 【渲染：教師端數據統計與圖表】
@@ -1524,7 +1566,7 @@
     // =========================================================================
     // 【匯出：時數數據 CSV】
     // =========================================================================
-    window.exportToCSV = function() {
+    function exportToCSV() {
       let headers = ['週別', '姓名', '項目與子任務', '申報時數', '送出日期'];
       let rows = [];
 
@@ -1556,22 +1598,61 @@
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `科研項目週報時數彙整_${state.selectedWeek}.csv`);
+      link.setAttribute("download", `實驗室週報時數彙整_${state.selectedWeek}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       showToast("🎉 本週 CSV 時數報表已成功下載！");
-    };
+    }
 
     function getWeeklySubmissionCount() {
       return state.submissions.filter(s => s.week === state.selectedWeek).length;
     }
 
-    // --- 程式初始化進入點 ---
-    window.addEventListener('DOMContentLoaded', () => {
-      initCurrentWeek(); // 初始化當前週別與日期輸入框
+    // --- 掛載全域物件連動 ---
+    window.initCurrentWeek = initCurrentWeek;
+    window.loadSheetData = loadSheetData;
+    window.handleUserLogin = handleUserLogin;
+    window.handleUserLogout = handleUserLogout;
+    window.studentAddProjectTask = studentAddProjectTask;
+    window.updateHourInput = updateHourInput;
+    window.adjustHour = adjustHour;
+    window.submitHours = submitHours;
+    window.openFeedbackModal = openFeedbackModal;
+    window.closeFeedbackModal = closeFeedbackModal;
+    window.saveFeedback = saveFeedback;
+    window.promptCreateProject = promptCreateProject;
+    window.openProjectEditModal = openProjectEditModal;
+    window.closeProjectEditModal = closeProjectEditModal;
+    window.updateEditingTaskName = updateEditingTaskName;
+    window.removeEditingTask = removeEditingTask;
+    window.addEditingTaskPlaceholder = addEditingTaskPlaceholder;
+    window.saveProjectEdit = saveProjectEdit;
+    window.updateUserField = updateUserField;
+    window.addNewUserRow = addNewUserRow;
+    window.removeUserRow = removeUserRow;
+    window.closeConfirmDeleteModal = closeConfirmDeleteModal;
+    window.saveUsersToCloud = saveUsersToCloud;
+    window.exportToCSV = exportToCSV;
+
+    // --- 頁面初始化進入點 ---
+    window.onload = function() {
+      initCurrentWeek(); // 初始化當前週別與日期區間
       loadSheetData();   // 載入 Google 試算表或本地快取的最新資料
-    });
+    };
+
+    // 同時監聽 week 變更事件
+    const weekPicker = document.getElementById('week-picker');
+    if (weekPicker) {
+      weekPicker.onchange = function(e) {
+        if (e.target.value) {
+          state.selectedWeek = e.target.value;
+          syncHoursStateWithSubmission();
+          onDataLoaded();
+          showToast(`已切換查看週別：${state.selectedWeek}`);
+        }
+      };
+    }
   </script>
 </body>
 </html>
