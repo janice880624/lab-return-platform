@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>實驗室時數單向申報平台</title>
+  <title>實驗室時數申報平台</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts -->
@@ -62,13 +62,24 @@
       </button>
     </div>
   </div>
+
+  <!-- 說明 Banner -->
+  <section class="bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent border-b border-slate-200 py-3 shrink-0">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600">
+      <div class="flex items-center gap-2">
+        <span class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-bold">Google Sheet 後端版本</span>
+        <span>⚡ <strong>單向時報：</strong>時數與成員密碼名單直接對接 Google Sheet 試算表，防錯不跑版。</span>
+      </div>
+    </div>
+  </section>
+
   <!-- 主內容容器 -->
   <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
 
     <!-- ================= 0. 登入驗證頁面 (未登入時呈現) ================= -->
     <div id="login-view" class="max-w-md mx-auto my-12 bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
       <div class="bg-indigo-600 text-white p-6 text-center">
-        <h2 class="text-xl font-bold">👤 實驗室申報登入</h2>
+        <h2 class="text-xl font-bold">👤 科研項目申報登入</h2>
         <p class="text-xs text-indigo-100 mt-1">請選擇您的所別與姓名進行驗證登入</p>
       </div>
       <div class="p-6 space-y-4">
@@ -89,7 +100,7 @@
         </div>
         <div id="login-password-section" class="hidden">
           <label class="text-xs font-bold text-slate-500 block mb-1">3. 輸入登入密碼</label>
-          <input type="password" id="login-password" placeholder="請輸入密碼 (大小寫英文 + 數字)..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          <input type="password" id="login-password" placeholder="請輸入密碼 (預設為 1234)..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
         </div>
         <button id="login-btn" onclick="handleUserLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-sm transition shadow-sm mt-2">
           確認登入
@@ -352,7 +363,7 @@
 
   <!-- 頁尾 -->
   <footer class="bg-slate-900 text-slate-500 py-6 text-center text-xs border-t border-slate-800 shrink-0">
-    <p>© 2026 實驗室時數填報平台. All Rights Reserved.</p>
+    <p>© 2026 實驗室時數填報平台. All Rights Reserved..</p>
     <p class="mt-1 text-slate-600">
       運動科學暨運動防護實驗室 • 動作診斷暨復健工程實驗室
     </p>
@@ -935,7 +946,7 @@
       });
     }
 
-    // --- 學生自主追加子項目動作 ---
+    // --- 學生自主追加子項目動作 (已修正時數被洗掉的衝突！) ---
     function studentAddProjectTask(projectId) {
       const input = document.getElementById(`inline-input-${projectId}`);
       const text = input ? input.value : "";
@@ -954,7 +965,12 @@
       }
 
       target.tasks.push(trimmed);
-      onDataLoaded();
+      
+      // 🚀 核心修正：不呼叫會去刷新並重新載入雲端存檔(進而覆蓋、抹除當前已填時數) 的 onDataLoaded()。
+      // 我們只在這裡做重繪面板渲染，如此一來便能完美保留學生已填寫好、但尚未送出的暫存時數！
+      renderTabs();
+      renderActiveTab();
+      
       showToast(`🎉 子項目已在本地建立，正在背景同步至雲端...`);
 
       if (state.dbConnected) {
@@ -1139,7 +1155,7 @@
               <span class="text-[10px] text-slate-400">${new Date(sub.updatedAt).toLocaleTimeString()} 回報</span>
             </div>
             <div class="mt-2.5 flex flex-wrap gap-1.5">
-              ${tasksBadgeHtml || '<span class="text-xs text-slate-400">本週無任何具體細項</span>'}
+              ${tasksBadgeHtml || '<span class="text-xs text-slate-400">本週無 any 具體細項</span>'}
             </div>
             ${sub.feedback ? `
               <p class="text-xs italic text-indigo-700 bg-indigo-50 border-l-2 border-indigo-500 py-1 px-2.5 mt-2 rounded">
@@ -1272,7 +1288,7 @@
           showToast(`☁️ 新大計畫「${trimmedName}」已成功同步至 Google Sheet！`, "success");
         } catch (err) {
           console.error(err);
-          showToast("同步雲端計畫失敗，但本地仍會暫時保留", "error");
+          showToast("同步雲端計畫失敗", "error");
         }
       } else {
         localStorage.setItem('reporting_html_projects', JSON.stringify(state.projects));
@@ -1326,15 +1342,15 @@
               ${taskInputsHtml}
             </div>
             <button type="button" onclick="addEditingTaskPlaceholder()" class="w-full border border-dashed border-slate-300 hover:border-slate-400 text-slate-500 py-1.5 text-xs font-bold rounded-lg transition text-center block mt-2">
-              ➕ 點此追加一個子任務
+              ➕ 點此追加一列子任務
             </button>
           </div>
 
           <div class="pt-3 flex gap-3">
-            <button type="button" onclick="closeProjectEditModal()" class="w-1/2 border border-slate-300 py-2 rounded-lg text-xs font-semibold text-slate-600 transition">
+            <button type="button" onclick="closeProjectEditModal()" class="w-1/2 border border-slate-300 py-2 rounded-lg text-sm text-slate-600 transition">
               取消
             </button>
-            <button type="button" onclick="saveProjectEdit()" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg text-xs transition shadow-sm">
+            <button type="button" onclick="saveProjectEdit()" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg text-sm transition">
               確認保存修改
             </button>
           </div>
@@ -1476,7 +1492,7 @@
         const deletedName = state.users[userIndexToDelete].name;
         state.users.splice(userIndexToDelete, 1);
         renderTeacherUsersPanel();
-        showToast(`已於名單中暫時移除「${deletedName}」，請記得點擊下方進行存檔！`, "warning");
+        showToast("已於名單中暫時移除「" + deletedName + "」，請記得點擊下方進行存檔！", "warning");
       }
       closeConfirmDeleteModal();
     };
@@ -1598,7 +1614,7 @@
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `實驗室週報時數彙整_${state.selectedWeek}.csv`);
+      link.setAttribute("download", `科研項目週報時數彙整_${state.selectedWeek}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
