@@ -35,7 +35,7 @@
       <div class="flex items-center gap-3">
         <div class="bg-indigo-600 p-2 rounded-lg">
           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" strokeLinejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
         <div>
@@ -193,7 +193,7 @@
             </div>
             <button onclick="exportToCSV()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" strokeLinejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               匯出本週時數 CSV
             </button>
@@ -294,7 +294,7 @@
         <h3 class="font-bold text-sm">留下意見反饋 / 時數查閱註記</h3>
         <button onclick="closeFeedbackModal()" class="text-slate-400 hover:text-white">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" strokeLinejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
@@ -326,7 +326,7 @@
         <h3 class="font-bold text-sm">編輯計畫與子項目</h3>
         <button onclick="closeProjectEditModal()" class="text-slate-400 hover:text-white">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" strokeLinejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
@@ -336,11 +336,11 @@
     </div>
   </div>
 
-  <!-- 自訂確認刪除成員 Modal (100% 避免 alert/confirm) -->
+  <!-- 自訂確認刪除成員 Modal -->
   <div id="confirm-delete-modal" class="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 border border-slate-200">
       <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1 text-rose-600">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" strokeLinejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
         確認刪除成員？
       </h3>
       <p id="confirm-delete-text" class="text-xs text-slate-500 mt-2.5">您確定要將此成員從名單中移除嗎？</p>
@@ -361,7 +361,6 @@
 
   <!-- ================= 業務狀態邏輯 (JavaScript) ================= -->
   <script type="module">
-    // --- 定義全域提示視窗函式 ---
     function showToast(message, type = 'success') {
       const container = document.getElementById('toast-container');
       if (!container) return;
@@ -384,7 +383,6 @@
     }
     window.showToast = showToast;
 
-    // --- 定義週日期區間計算輔助函式 ---
     function getWeekDateRange(weekStr) {
       if (!weekStr) return "";
       const match = weekStr.match(/^(\d{4})-W(\d{2})$/);
@@ -392,16 +390,12 @@
       const year = parseInt(match[1], 10);
       const week = parseInt(match[2], 10);
 
-      // 找尋當年的第一個星期四 (ISO 標準周判定)
       const jan4 = new Date(year, 0, 4);
       const jan4Day = jan4.getDay();
       const thursdayOffset = 4 - (jan4Day === 0 ? 7 : jan4Day);
       const firstThursday = new Date(jan4.getTime() + thursdayOffset * 24 * 60 * 60 * 1000);
-
-      // 目標週的星期四
       const targetThursday = new Date(firstThursday.getTime() + (week - 1) * 7 * 24 * 60 * 60 * 1000);
 
-      // 計算 Monday 與 Sunday 的日期
       const monday = new Date(targetThursday.getTime() - 3 * 24 * 60 * 60 * 1000);
       const sunday = new Date(targetThursday.getTime() + 3 * 24 * 60 * 60 * 1000);
 
@@ -409,7 +403,6 @@
       return `${formatDate(monday)} ~ ${formatDate(sunday)}`;
     }
 
-    // --- 初始化目前週別的函式 ---
     function initCurrentWeek() {
       const now = new Date();
       const startOfYear = new Date(now.getFullYear(), 0, 1);
@@ -422,88 +415,22 @@
       }
     }
 
-    // --- 🚨 GOOGLE SHEET APPS SCRIPT WEB APP 網址設定 🚨 ---
     const GAS_WEB_APP_URL = "https://lab-return-platform.janice-064.workers.dev/"; 
 
-    // --- 預設預載項目結構 (若無法連線 Google Sheet 時的備用) ---
     const INITIAL_PROJECTS = [
-      {
-        id: "thesis",
-        name: "論文相關",
-        color: "emerald",
-        tasks: ["論文撰寫", "資料整理", "資料分析", "AI 模型", "IRB 準備/討論", "實驗"]
-      },
-      {
-        id: "courses",
-        name: "修課相關",
-        color: "rose",
-        tasks: ["上課", "課堂作業", "語言學習 (如英文、中文)"]
-      },
-      {
-        id: "research",
-        name: "研究",
-        color: "amber",
-        tasks: ["文獻閱讀/報告/翻譯", "文章投稿", "教育訓練"]
-      },
-      {
-        id: "triathlon",
-        name: "三鐵計畫",
-        color: "sky",
-        tasks: [
-          "參與者招募相關", "官方Line回覆", "提醒參與者 (如量舌溫、填問卷、預約檢測)", 
-          "最大攝氧量檢測", "身體組成量測", "體適能檢測", "游泳檢測", 
-          "資料彙整、統計報表", "資料分析 (如Biodex)", "AI教練", "會議", "IRB 準備/討論"
-        ]
-      },
-      {
-        id: "asus",
-        name: "ASUS計畫",
-        color: "orange",
-        tasks: [
-          "會議", "IRB 準備/討論", "文獻", "實驗設計", "實驗", 
-          "簡報準備", "QTM分析", "EMG分析", "EMG儀器 (聯絡陳老闆)", 
-          "製作滿意度問卷", "修改實驗紀錄單"
-        ]
-      },
-      {
-        id: "dizziness",
-        name: "暈眩計畫",
-        color: "teal",
-        tasks: ["招募研究參與者", "IRB 準備/討論", "實驗", "iRB 延展/寄出"]
-      },
-      {
-        id: "usr",
-        name: "USR計畫",
-        color: "purple",
-        tasks: ["檢測", "運動訓練課程", "講座", "會議", "聯繫事宜", "IRB 準備/討論"]
-      },
-      {
-        id: "spark",
-        name: "SPARK計畫",
-        color: "slate",
-        tasks: ["課程活動", "招募研究參與者", "實驗", "資料分析", "輔大醫院 IRB 準備/討論"]
-      },
-      {
-        id: "stem",
-        name: "STEM計畫",
-        color: "amber-dark",
-        tasks: ["校外活動"]
-      },
-      {
-        id: "cathay",
-        name: "國泰計畫",
-        color: "red",
-        tasks: ["國泰計畫 (IRB + 院內計畫書)"]
-      },
-      {
-        id: "tri_service",
-        name: "三總計畫",
-        color: "pink",
-        tasks: ["三總計畫 (收案 + 數據整理)"]
-      }
+      { id: "thesis", name: "論文相關", color: "emerald", tasks: ["論文撰寫", "資料整理", "資料分析", "AI 模型", "IRB 準備/討論", "實驗"] },
+      { id: "courses", name: "修課相關", color: "rose", tasks: ["上課", "課堂作業", "語言學習 (如英文、中文)"] },
+      { id: "research", name: "研究", color: "amber", tasks: ["文獻閱讀/報告/翻譯", "文章投稿", "教育訓練"] },
+      { id: "triathlon", name: "三鐵計畫", color: "sky", tasks: ["參與者招募相關", "官方Line回覆", "提醒參與者 (如量舌溫、填問卷、預約檢測)", "最大攝氧量檢測", "身體組成量測", "體適能檢測", "游泳檢測", "資料彙整、統計報表", "資料分析 (如Biodex)", "AI教練", "會議", "IRB 準備/討論"] },
+      { id: "asus", name: "ASUS計畫", color: "orange", tasks: ["會議", "IRB 準備/討論", "文獻", "實驗設計", "實驗", "簡報準備", "QTM分析", "EMG分析", "EMG儀器 (聯絡陳老闆)", "製作滿意度問卷", "修改實驗紀錄單"] },
+      { id: "dizziness", name: "暈眩計畫", color: "teal", tasks: ["招募研究參與者", "IRB 準備/討論", "實驗", "iRB 延展/寄出"] },
+      { id: "usr", name: "USR計畫", color: "purple", tasks: ["檢測", "運動訓練課程", "講座", "會議", "聯繫事宜", "IRB 準備/討論"] },
+      { id: "spark", name: "SPARK計畫", color: "slate", tasks: ["課程活動", "招募研究參與者", "實驗", "資料分析", "輔大醫院 IRB 準備/討論"] },
+      { id: "stem", name: "STEM計畫", color: "amber-dark", tasks: ["校外活動"] },
+      { id: "cathay", name: "國泰計畫", color: "red", tasks: ["國泰計畫 (IRB + 院內計畫書)"] },
+      { id: "tri_service", name: "三總計畫", color: "pink", tasks: ["三總計畫 (收案 + 數據整理)"] }
     ];
 
-    // 初始名單資料 (安全考量：已安全隔離，不暴露於前端代碼)
     const INITIAL_USERS = [];
 
     const COLOR_MAPS = {
@@ -520,22 +447,20 @@
       pink: { bg: "bg-pink-50", border: "border-pink-200", text: "text-pink-800", badge: "bg-pink-100 text-pink-800", hex: "#ec4899" }
     };
 
-    // --- 全局狀態 ---
     let state = {
       dbConnected: false,
-      currentUser: null, // 預設未登入
-      activeTab: 'report', // 學生: 'report'|'history' ; 老師: 'review'|'config'|'users'|'analytics'
+      currentUser: null,
+      activeTab: 'report',
       projects: INITIAL_PROJECTS,
       submissions: [],
-      users: INITIAL_USERS, // 動態成員列表
+      users: INITIAL_USERS,
       selectedWeek: "",
-      hoursInput: {},  // key: "projectId_taskName" -> val: float
-      customTasks: [], // { taskName: string, hours: float }
+      hoursInput: {},  
+      customTasks: [], 
       editingProject: null,
       activeModalSubmission: null
     };
 
-    // --- 🚨 雲端輔助 POST 請求發送器 🚨 ---
     async function sendGasPost(payload) {
       if (!GAS_WEB_APP_URL) return;
       await fetch(GAS_WEB_APP_URL, {
@@ -550,7 +475,7 @@
       if (!GAS_WEB_APP_URL) {
         setupLocalStorageFallback();
         setTimeout(() => {
-          showToast("💡 偵測到尚未設定 Google Sheet 網址，已切換至「離線快取測試模式」！", "warning");
+          showToast("💡 尚未設定 Google Sheet 網址，已切換至「離線快取測試模式」！", "warning");
         }, 1000);
         return;
       }
@@ -568,11 +493,11 @@
         badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>Google Sheet 連線中`;
 
         onDataLoaded();
-        setupLoginInterface(); // 連線成功後，初始化登入頁面下拉名單
+        setupLoginInterface();
       } catch (err) {
-        console.warn("無法自 Google Sheet 載入資料，將啟用 LocalStorage Fallback 模擬：", err);
+        console.warn("無法自 Google Sheet 載入資料，將啟用 LocalStorage Fallback：", err);
         setupLocalStorageFallback();
-        showToast("⚠️ 無法連線 Google Sheet，目前已自動切換為本地模擬測試模式。", "warning");
+        showToast("⚠️ 無法連線 Google Sheet，已切換為本地模擬測試模式。", "warning");
       }
     }
 
@@ -582,48 +507,25 @@
       badge.className = "px-2.5 py-1 text-xs rounded-full flex items-center gap-1.5 font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20";
       badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span>本地模擬快取模式`;
 
-      // 計畫案
-      const localProjects = localStorage.getItem('reporting_html_projects');
-      if (localProjects) {
-        state.projects = JSON.parse(localProjects);
-      } else {
-        localStorage.setItem('reporting_html_projects', JSON.stringify(INITIAL_PROJECTS));
-      }
-
-      // 填報紀錄
-      const localSubmissions = localStorage.getItem('reporting_html_submissions');
-      if (localSubmissions) {
-        state.submissions = JSON.parse(localSubmissions);
-      } else {
-        localStorage.setItem('reporting_html_submissions', JSON.stringify([]));
-      }
-
-      // 成員帳號名單
-      const localUsers = localStorage.getItem('reporting_html_users');
-      if (localUsers) {
-        state.users = JSON.parse(localUsers);
-      } else {
-        localStorage.setItem('reporting_html_users', JSON.stringify(INITIAL_USERS));
-      }
+      state.projects = JSON.parse(localStorage.getItem('reporting_html_projects')) || INITIAL_PROJECTS;
+      state.submissions = JSON.parse(localStorage.getItem('reporting_html_submissions')) || [];
+      state.users = JSON.parse(localStorage.getItem('reporting_html_users')) || INITIAL_USERS;
 
       onDataLoaded();
       setupLoginInterface();
     }
 
-    // --- 邊界數據載入與變動更新流程 ---
     function onDataLoaded() {
       syncHoursStateWithSubmission();
       renderTabs();
       renderActiveTab();
       
-      // 更新週別日期區間顯示
       const weekRangeDisplay = document.getElementById('week-range-display');
       if (weekRangeDisplay) {
         weekRangeDisplay.textContent = getWeekDateRange(state.selectedWeek) || "計算中...";
       }
     }
 
-    // --- 當切換週別或人員，載入先前編輯過的時數 ---
     function syncHoursStateWithSubmission() {
       if (!state.currentUser) return;
       const match = state.submissions.find(s => s.userId === state.currentUser.uid && s.week === state.selectedWeek);
@@ -636,7 +538,6 @@
       }
     }
 
-    // --- 計算目前編輯中的累積總工時 ---
     function calculateCurrentTotal() {
       let sum = 0;
       Object.values(state.hoursInput).forEach(val => {
@@ -648,7 +549,6 @@
       return sum;
     }
 
-    // --- 登入畫面下拉連動與防呆連線診斷邏輯 ---
     function setupLoginInterface() {
       const deptSelect = document.getElementById('login-dept');
       const nameSelect = document.getElementById('login-name');
@@ -668,17 +568,12 @@
           return;
         }
 
-        // 過濾出該科所的成員
         const filteredUsers = state.users.filter(u => u.dept === dept);
-        
         nameSelect.disabled = false;
         
-        // 核心修正：若篩選後的人數為 0，代表雲端並未回傳名單
         if (filteredUsers.length === 0) {
           nameSelect.className = "w-full border border-rose-300 rounded-lg p-2.5 text-sm bg-rose-50 text-rose-800 focus:outline-none";
-          nameSelect.innerHTML = `
-            <option value="">⚠️ 查無此所別成員，請確認 GAS 是否已部署為「新版本」</option>
-          `;
+          nameSelect.innerHTML = `<option value="">⚠️ 查無此所別成員</option>`;
           return;
         }
 
@@ -700,7 +595,6 @@
       };
     }
 
-    // --- 執行登入程序 ---
     function handleUserLogin() {
       const nameSelect = document.getElementById('login-name');
       const passwordInput = document.getElementById('login-password');
@@ -708,45 +602,30 @@
       const userId = nameSelect.value;
       const pwd = passwordInput.value;
 
-      if (!userId) {
-        showToast("請先選擇您的姓名！", "warning");
-        return;
-      }
-      if (!pwd) {
-        showToast("請輸入登入密碼！", "warning");
+      if (!userId || !pwd) {
+        showToast("請完整填寫姓名與密碼！", "warning");
         return;
       }
 
       const foundUser = state.users.find(u => u.uid === userId);
-      if (!foundUser) {
-        showToast("系統內找不到此成員資料，請聯繫林教授！", "error");
+      if (!foundUser || foundUser.password !== pwd) {
+        showToast("登入失敗：帳號或密碼有誤！", "error");
         return;
       }
 
-      if (foundUser.password !== pwd) {
-        showToast("登入失敗：您輸入的密碼有誤，請再試一次！", "error");
-        return;
-      }
-
-      // 驗證通過
       state.currentUser = foundUser;
       state.activeTab = foundUser.role === 'student' ? 'report' : 'review';
 
-      // 介面切換
       document.getElementById('login-view').classList.add('hidden');
       document.getElementById('user-status-bar').classList.remove('hidden');
       document.getElementById('main-dashboard').classList.remove('hidden');
-
       document.getElementById('user-status-text').textContent = `👤 目前登入：${foundUser.name} (${foundUser.dept})`;
 
-      // 清除登入欄位殘留資訊
       passwordInput.value = '';
-
       showToast(`🎉 歡迎登入，${foundUser.name}！`);
       onDataLoaded();
     }
 
-    // --- 執行登出程序 ---
     function handleUserLogout() {
       state.currentUser = null;
       state.hoursInput = {};
@@ -760,13 +639,11 @@
       const nameSelect = document.getElementById('login-name');
       nameSelect.innerHTML = `<option value="">-- 請先選擇所別 --</option>`;
       nameSelect.disabled = true;
-      nameSelect.className = "w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-slate-100 focus:outline-none";
       document.getElementById('login-password-section').classList.add('hidden');
 
       showToast("您已成功登出系統。");
     }
 
-    // --- 頁籤動態建構渲染 ---
     function renderTabs() {
       if (!state.currentUser) return;
       const tabContainer = document.getElementById('tab-container');
@@ -776,17 +653,13 @@
       if (state.currentUser.role === 'student') {
         tabs.push({ id: 'report', label: '時數申報填寫' });
         tabs.push({ id: 'history', label: '申報歷史紀錄' });
-        if (state.activeTab !== 'report' && state.activeTab !== 'history') {
-          state.activeTab = 'report';
-        }
+        if (state.activeTab !== 'report' && state.activeTab !== 'history') state.activeTab = 'report';
       } else {
         tabs.push({ id: 'review', label: `時數回報看板 (${getWeeklySubmissionCount()})` });
         tabs.push({ id: 'config', label: '計畫與子項目管理' });
         tabs.push({ id: 'users', label: '成員帳號與密碼管理' }); 
         tabs.push({ id: 'analytics', label: '投入佔比圖表' });
-        if (state.activeTab !== 'review' && state.activeTab !== 'config' && state.activeTab !== 'users' && state.activeTab !== 'analytics') {
-          state.activeTab = 'review';
-        }
+        if (!['review', 'config', 'users', 'analytics'].includes(state.activeTab)) state.activeTab = 'review';
       }
 
       tabs.forEach(t => {
@@ -804,14 +677,8 @@
       });
     }
 
-    // --- 控制分頁 View 容器的顯隱 ---
     function renderActiveTab() {
-      if (!state.currentUser) {
-        document.getElementById('login-view').classList.remove('hidden');
-        document.getElementById('main-dashboard').classList.add('hidden');
-        document.getElementById('user-status-bar').classList.add('hidden');
-        return;
-      }
+      if (!state.currentUser) return;
 
       document.getElementById('student-report-view').classList.add('hidden');
       document.getElementById('student-history-view').classList.add('hidden');
@@ -846,42 +713,35 @@
     }
 
     // =========================================================================
-    // 【渲染：學生端申報介面】
+    // 【最佳化：學生端申報介面 (減少 DOM 頻繁重建)】
     // =========================================================================
+    let isStudentPanelRendered = false;
+
     function renderStudentReportPanel() {
       document.getElementById('summary-user-display').textContent = `學號姓名： ${state.currentUser.name}`;
-      const currentTotal = calculateCurrentTotal();
-      document.getElementById('total-hours-badge').textContent = currentTotal;
-
-      const match = state.submissions.find(s => s.userId === state.currentUser.uid && s.week === state.selectedWeek);
-      const statusCard = document.getElementById('submission-status-card');
-      const feedbackCard = document.getElementById('teacher-feedback-card');
-
-      if (match) {
-        statusCard.className = "bg-emerald-50 text-emerald-800 border border-emerald-200 p-3 rounded-lg flex items-start gap-2";
-        statusCard.innerHTML = `
-          <span class="text-lg">📬</span>
-          <div class="text-xs">
-            <div class="font-bold">本週時數已成功送達</div>
-            <p class="text-slate-500 mt-1">最後更新於: ${new Date(match.updatedAt).toLocaleTimeString()}</p>
-            <p class="text-indigo-600 font-medium mt-0.5">單向回報已存檔，您仍可隨時修改並重新送出。</p>
-          </div>
-        `;
-        if (match.feedback) {
-          feedbackCard.classList.remove('hidden');
-          document.getElementById('teacher-feedback-text').textContent = `"${match.feedback}"`;
-        } else {
-          feedbackCard.classList.add('hidden');
-        }
-      } else {
-        statusCard.className = "bg-slate-100 text-slate-600 border border-slate-200 p-3 rounded-lg text-xs font-semibold text-center";
-        statusCard.textContent = "📭 本週尚未建立呈報紀錄";
-        feedbackCard.classList.add('hidden');
-      }
+      updateTotalHoursDisplay();
+      updateSubmissionStatusUI();
 
       const container = document.getElementById('project-cards-container');
-      container.innerHTML = '';
+      
+      // 如果已經渲染過卡片框架，僅更新數值，避免每次調整時數都重建整個 DOM 列表導致延遲
+      if (isStudentPanelRendered && container.children.length > 0) {
+        state.projects.forEach(proj => {
+          proj.tasks.forEach(task => {
+            const key = `${proj.id}_${task}`;
+            const inputEl = document.getElementById(`input_${key}`);
+            if (inputEl) {
+              const val = state.hoursInput[key] || '';
+              if (inputEl.value !== String(val)) {
+                inputEl.value = val;
+              }
+            }
+          });
+        });
+        return;
+      }
 
+      container.innerHTML = '';
       state.projects.forEach(proj => {
         const colorSet = COLOR_MAPS[proj.color] || COLOR_MAPS.slate;
         const card = document.createElement('div');
@@ -909,8 +769,8 @@
                 <button type="button" onclick="adjustHour('${proj.id}', '${task}', -0.5)" class="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 12H4" /></svg>
                 </button>
-                <input type="number" min="0" step="0.5" placeholder="0" value="${currentVal}" 
-                  onchange="updateHourInput('${proj.id}', '${task}', this.value)"
+                <input type="number" id="input_${key}" min="0" step="0.5" placeholder="0" value="${currentVal}" 
+                  oninput="updateHourInput('${proj.id}', '${task}', this.value)"
                   class="w-14 text-center border border-slate-300 rounded px-1.5 py-1 text-xs font-bold focus:ring-1 focus:ring-indigo-500 bg-white" />
                 <button type="button" onclick="adjustHour('${proj.id}', '${task}', 0.5)" class="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" /></svg>
@@ -923,7 +783,7 @@
 
         let inlineAdderHtml = `
           <div class="bg-slate-50 border-t border-slate-100 p-2 flex items-center gap-2">
-            <input type="text" id="inline-input-${proj.id}" placeholder="➕ 學生自主新增此計畫子項目..." 
+            <input type="text" id="inline-input-${proj.id}" placeholder="➕ 自主新增子項目..." 
               class="flex-1 text-[11px] border border-slate-300 rounded px-2.5 py-1 focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-white" />
             <button type="button" onclick="studentAddProjectTask('${proj.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 py-1.5 rounded shadow-sm transition">
               新增項目
@@ -934,14 +794,47 @@
         card.innerHTML = headerHtml + listHtml + inlineAdderHtml;
         container.appendChild(card);
       });
+      isStudentPanelRendered = true;
     }
 
-    // --- 學生自主追加子項目動作 (已修正時數被洗掉的衝突！) ---
+    function updateTotalHoursDisplay() {
+      const currentTotal = calculateCurrentTotal();
+      const badge = document.getElementById('total-hours-badge');
+      if (badge) badge.textContent = currentTotal;
+    }
+
+    function updateSubmissionStatusUI() {
+      const match = state.submissions.find(s => s.userId === state.currentUser.uid && s.week === state.selectedWeek);
+      const statusCard = document.getElementById('submission-status-card');
+      const feedbackCard = document.getElementById('teacher-feedback-card');
+
+      if (match) {
+        statusCard.className = "bg-emerald-50 text-emerald-800 border border-emerald-200 p-3 rounded-lg flex items-start gap-2";
+        statusCard.innerHTML = `
+          <span class="text-lg">📬</span>
+          <div class="text-xs">
+            <div class="font-bold">本週時數已成功送達</div>
+            <p class="text-slate-500 mt-1">更新於: ${new Date(match.updatedAt).toLocaleTimeString()}</p>
+          </div>
+        `;
+        if (match.feedback) {
+          feedbackCard.classList.remove('hidden');
+          document.getElementById('teacher-feedback-text').textContent = `"${match.feedback}"`;
+        } else {
+          feedbackCard.classList.add('hidden');
+        }
+      } else {
+        statusCard.className = "bg-slate-100 text-slate-600 border border-slate-200 p-3 rounded-lg text-xs font-semibold text-center";
+        statusCard.textContent = "📭 本週尚未建立呈報紀錄";
+        feedbackCard.classList.add('hidden');
+      }
+    }
+
     function studentAddProjectTask(projectId) {
       const input = document.getElementById(`inline-input-${projectId}`);
       const text = input ? input.value : "";
       if (!text || !text.trim()) {
-        showToast("請先輸入要新增的子項目名稱！", "warning");
+        showToast("請輸入子項目名稱！", "warning");
         return;
       }
 
@@ -950,29 +843,17 @@
       if (!target) return;
 
       if (target.tasks.includes(trimmed)) {
-        showToast("該子項目已存在此計畫中！", "warning");
+        showToast("該子項目已存在！", "warning");
         return;
       }
 
       target.tasks.push(trimmed);
-      
-      // 🚀 核心修正：不呼叫會去刷新並重新載入雲端存檔(進而覆蓋、抹除當前已填時數) 的 onDataLoaded()。
-      // 我們只在這裡做重繪面板渲染，如此一來便能完美保留學生已填寫好、但尚未送出的暫存時數！
-      renderTabs();
+      isStudentPanelRendered = false; // 強制重新渲染以帶入新增的任務列
       renderActiveTab();
-      
-      showToast(`🎉 子項目已在本地建立，正在背景同步至雲端...`);
+      showToast(`🎉 子項目已新增成功！`);
 
       if (state.dbConnected) {
-        sendGasPost({
-          action: "updateProjects",
-          projects: state.projects
-        }).then(() => {
-          showToast(`☁️ Google Sheet 雲端同步存檔成功！`, "success");
-        }).catch(err => {
-          console.error(err);
-          showToast("雲端同步計畫失敗，但本地仍會暫時保留", "error");
-        });
+        sendGasPost({ action: "updateProjects", projects: state.projects });
       } else {
         localStorage.setItem('reporting_html_projects', JSON.stringify(state.projects));
       }
@@ -986,30 +867,31 @@
       } else {
         state.hoursInput[key] = num;
       }
-      document.getElementById('total-hours-badge').textContent = calculateCurrentTotal();
+      updateTotalHoursDisplay();
     }
 
     function adjustHour(projectId, taskName, delta) {
       const key = `${projectId}_${taskName}`;
       const currentVal = state.hoursInput[key] || 0;
       const newVal = Math.max(0, currentVal + delta);
-      updateHourInput(projectId, taskName, newVal);
-      renderStudentReportPanel();
+      state.hoursInput[key] = newVal > 0 ? newVal : '';
+      
+      const inputEl = document.getElementById(`input_${key}`);
+      if (inputEl) inputEl.value = state.hoursInput[key];
+      
+      updateTotalHoursDisplay();
     }
 
-    // --- 學生送出回報 (單向送出) ---
     function submitHours() {
       const currentTotal = calculateCurrentTotal();
       if (currentTotal === 0) {
-        showToast("本週回報總時數不能為 0 小時！", "warning");
+        showToast("總時數不能為 0 小時！", "warning");
         return;
       }
 
       const sanitized = {};
       Object.entries(state.hoursInput).forEach(([k, v]) => {
-        if (v && parseFloat(v) > 0) {
-          sanitized[k] = parseFloat(v);
-        }
+        if (v && parseFloat(v) > 0) sanitized[k] = parseFloat(v);
       });
 
       const submissionData = {
@@ -1024,16 +906,14 @@
       };
 
       const docId = `${state.currentUser.uid}_${state.selectedWeek}`;
-
       const existIdx = state.submissions.findIndex(s => s.id === docId);
       const localSub = { id: docId, ...submissionData };
-      if (existIdx >= 0) {
-        state.submissions[existIdx] = localSub;
-      } else {
-        state.submissions.push(localSub);
-      }
-      onDataLoaded();
-      showToast("🎉 時數已在本地更新，正在上傳至 Google Sheet 試算表...");
+      
+      if (existIdx >= 0) state.submissions[existIdx] = localSub;
+      else state.submissions.push(localSub);
+
+      updateSubmissionStatusUI();
+      showToast("🎉 時數已成功送出與儲存！");
 
       if (state.dbConnected) {
         sendGasPost({
@@ -1043,20 +923,12 @@
           week: state.selectedWeek,
           hours: sanitized,
           customHours: state.customTasks
-        }).then(() => {
-          showToast("☁️ 時數已成功同步寫入雲端！", "success");
-        }).catch(err => {
-          console.error(err);
-          showToast("雲端同步時數失敗，將暫存於網頁", "error");
         });
       } else {
         localStorage.setItem('reporting_html_submissions', JSON.stringify(state.submissions));
       }
     }
 
-    // =========================================================================
-    // 【渲染：學生端申報歷史】
-    // =========================================================================
     function renderStudentHistoryPanel() {
       const tbody = document.getElementById('history-table-body');
       tbody.innerHTML = '';
@@ -1066,14 +938,13 @@
         .sort((a, b) => b.week.localeCompare(a.week));
 
       if (mine.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">目前尚無任何呈報紀錄</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">目前尚無歷史紀錄</td></tr>`;
         return;
       }
 
       mine.forEach(sub => {
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 transition-all";
-
         let summaryText = [];
         Object.entries(sub.hours || {}).forEach(([k, v]) => {
           const [projId, task] = k.split('_');
@@ -1083,7 +954,7 @@
 
         tr.innerHTML = `
           <td class="p-3 font-semibold text-indigo-600 text-xs">${sub.week}</td>
-          <td class="p-3 text-xs text-slate-600 max-w-sm truncate" title="${summaryText.join(', ')}">${summaryText.join(', ') || '無'}</td>
+          <td class="p-3 text-xs text-slate-600 max-w-sm truncate">${summaryText.join(', ') || '無'}</td>
           <td class="p-3 text-center font-bold text-slate-700 text-xs">${sub.totalHours}h</td>
           <td class="p-3 text-xs text-slate-400">${new Date(sub.updatedAt).toLocaleString()}</td>
           <td class="p-3 text-xs italic text-indigo-800">${sub.feedback || '<span class="text-slate-300">暫無反饋</span>'}</td>
@@ -1092,9 +963,6 @@
       });
     }
 
-    // =========================================================================
-    // 【渲染：教師端時數即時看板】
-    // =========================================================================
     function renderTeacherReviewPanel() {
       const listContainer = document.getElementById('submissions-list');
       listContainer.innerHTML = '';
@@ -1104,73 +972,45 @@
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
       if (weeklySubs.length === 0) {
-        listContainer.innerHTML = `
-          <div class="text-center py-12 text-slate-400 border border-dashed border-slate-200 rounded-xl">
-            <p class="text-sm font-semibold">本週 (${state.selectedWeek}) 尚無 any 學生送出申報數據</p>
-            <p class="text-xs mt-1">您可以切換上方模擬身份為「學生」來試著送出時數！</p>
-          </div>
-        `;
+        listContainer.innerHTML = `<div class="text-center py-12 text-slate-400 border border-dashed border-slate-200 rounded-xl"><p class="text-sm font-semibold">本週尚無學生送出申報</p></div>`;
         return;
       }
 
       weeklySubs.forEach(sub => {
         const item = document.createElement('div');
-        item.className = "border border-slate-200 rounded-xl p-4 bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all flex flex-col md:flex-row md:items-center justify-between gap-4";
+        item.className = "border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4";
 
         let tasksBadgeHtml = '';
         Object.entries(sub.hours || {}).forEach(([key, v]) => {
           const [projId, task] = key.split('_');
           const proj = state.projects.find(p => p.id === projId);
-          // 🚀 安全色彩解析機制：防止因 `proj.color` 為不支援的自訂樣式（如黃色、藍色等）導致 undefined。
           const colorSet = COLOR_MAPS[proj?.color] || COLOR_MAPS.slate;
-          tasksBadgeHtml += `
-            <span class="text-[10px] px-2 py-0.5 rounded border ${colorSet.border} ${colorSet.bg} ${colorSet.text} font-bold">
-              ${proj?.name || projId} - ${task}: ${v}h
-            </span>
-          `;
-        });
-        (sub.customHours || []).forEach(c => {
-          tasksBadgeHtml += `
-            <span class="text-[10px] px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-indigo-800 font-bold">
-              自訂追加: ${c.taskName}: ${c.hours}h
-            </span>
-          `;
+          tasksBadgeHtml += `<span class="text-[10px] px-2 py-0.5 rounded border ${colorSet.border} ${colorSet.bg} ${colorSet.text} font-bold">${proj?.name || projId} - ${task}: ${v}h</span>`;
         });
 
         item.innerHTML = `
           <div>
             <div class="flex items-center gap-3">
               <span class="font-bold text-sm text-slate-800">${sub.userName}</span>
-              <span class="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">📬 時數已送達</span>
-              <span class="text-[10px] text-slate-400">${new Date(sub.updatedAt).toLocaleTimeString()} 回報</span>
+              <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">📬 已送達</span>
             </div>
-            <div class="mt-2.5 flex flex-wrap gap-1.5">
-              ${tasksBadgeHtml || '<span class="text-xs text-slate-400">本週無 any 具體細項</span>'}
-            </div>
-            ${sub.feedback ? `
-              <p class="text-xs italic text-indigo-700 bg-indigo-50 border-l-2 border-indigo-500 py-1 px-2.5 mt-2 rounded">
-                <strong>我的反饋註記：</strong> ${sub.feedback}
-              </p>
-            ` : ''}
+            <div class="mt-2.5 flex flex-wrap gap-1.5">${tasksBadgeHtml}</div>
+            ${sub.feedback ? `<p class="text-xs italic text-indigo-700 bg-indigo-50 mt-2 p-1.5 rounded"><strong>反饋：</strong> ${sub.feedback}</p>` : ''}
           </div>
-          <div class="flex items-center gap-3 shrink-0 self-end md:self-auto">
+          <div class="flex items-center gap-3 shrink-0">
             <span class="text-base font-black text-slate-700">共 ${sub.totalHours} 小時</span>
-            <button onclick="openFeedbackModal('${sub.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow-sm">
-              給予反饋意見
-            </button>
+            <button onclick="openFeedbackModal('${sub.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm">給予反饋</button>
           </div>
         `;
         listContainer.appendChild(item);
       });
     }
 
-    // --- 反饋留言視窗處理 ---
     function openFeedbackModal(submissionId) {
       const sub = state.submissions.find(s => s.id === submissionId);
       if (!sub) return;
-
       state.activeModalSubmission = sub;
-      document.getElementById('modal-target-info').textContent = `${sub.userName} (週別 ${sub.week})`;
+      document.getElementById('modal-target-info').textContent = `${sub.userName} (${sub.week})`;
       document.getElementById('modal-feedback-textarea').value = sub.feedback || '';
       document.getElementById('feedback-modal').classList.remove('hidden');
     }
@@ -1183,114 +1023,55 @@
     function saveFeedback() {
       const sub = state.activeModalSubmission;
       if (!sub) return;
-
       const fbText = document.getElementById('modal-feedback-textarea').value.trim();
-
       sub.feedback = fbText;
       sub.updatedAt = new Date().toISOString();
-      onDataLoaded();
-      showToast("已成功更新反饋！正在同步雲端...");
+      renderActiveTab();
+      showToast("反饋已更新！");
       closeFeedbackModal();
 
       if (state.dbConnected) {
-        sendGasPost({
-          action: "updateFeedback",
-          userId: sub.userId,
-          week: sub.week,
-          feedback: fbText
-        }).then(() => {
-          showToast("☁️ 反饋備註已同步至 Google Sheet 中！", "success");
-        }).catch(err => {
-          console.error(err);
-          showToast("反饋同步雲端失敗", "error");
-        });
+        sendGasPost({ action: "updateFeedback", userId: sub.userId, week: sub.week, feedback: fbText });
       } else {
         localStorage.setItem('reporting_html_submissions', JSON.stringify(state.submissions));
       }
     }
 
-    // =========================================================================
-    // 【渲染：教師端項目自訂配置】
-    // =========================================================================
     function renderTeacherConfigPanel() {
       const container = document.getElementById('config-projects-container');
       container.innerHTML = '';
-
       state.projects.forEach(proj => {
         const colorSet = COLOR_MAPS[proj.color] || COLOR_MAPS.slate;
         const item = document.createElement('div');
-        item.className = "border border-slate-200 rounded-xl p-4 bg-slate-50/50 hover:bg-white transition-all flex flex-col justify-between gap-4";
-
+        item.className = "border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col justify-between gap-4";
         let tasksBadges = '';
-        proj.tasks.forEach(t => {
-          tasksBadges += `<span class="text-[10px] px-2.5 py-1 bg-slate-100 rounded text-slate-600 font-bold">${t}</span>`;
-        });
-
+        proj.tasks.forEach(t => { tasksBadges += `<span class="text-[10px] px-2.5 py-1 bg-slate-100 rounded text-slate-600 font-bold">${t}</span>`; });
         item.innerHTML = `
           <div>
             <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
-              <span class="text-xs font-black ${colorSet.text} flex items-center gap-1.5">
-                <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${colorSet.hex}"></span>
-                ${proj.name}
-              </span>
-              <button onclick="openProjectEditModal('${proj.id}')" class="text-xs text-indigo-600 hover:text-indigo-800 font-bold">
-                ✏️ 編輯
-              </button>
+              <span class="text-xs font-black ${colorSet.text} flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full" style="background-color: ${colorSet.hex}"></span>${proj.name}</span>
+              <button onclick="openProjectEditModal('${proj.id}')" class="text-xs text-indigo-600 font-bold">✏️ 編輯</button>
             </div>
-            <div class="flex flex-wrap gap-1.5">
-              ${tasksBadges || '<span class="text-xs text-slate-400">目前無任務細項</span>'}
-            </div>
+            <div class="flex flex-wrap gap-1.5">${tasksBadges}</div>
           </div>
         `;
         container.appendChild(item);
       });
     }
 
-    // --- 建立全新計畫項目 (採用 🚀 Optimistic UI 樂觀渲染技術) ---
     async function promptCreateProject() {
-      const name = prompt("請輸入全新研究計畫名稱：（例如：科技部專案、新實驗合作）");
+      const name = prompt("請輸入全新研究計畫名稱：");
       if (!name || !name.trim()) return;
-
-      const trimmedName = name.trim();
-      const newId = `proj_${Date.now()}`;
-      const colors = ['emerald', 'rose', 'amber', 'sky', 'orange', 'teal', 'purple', 'slate', 'red', 'pink'];
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-
-      const newProj = {
-        id: newId,
-        name: trimmedName,
-        color: randomColor,
-        tasks: ["主要會議/工作項目"]
-      };
-
-      // 1. 🚀 樂觀更新：立刻將新計畫加入本地 state 並重新渲染 UI，秒級響應！
+      const newProj = { id: `proj_${Date.now()}`, name: name.trim(), color: 'indigo', tasks: ["主要工作項目"] };
       state.projects.push(newProj);
-      onDataLoaded();
-      showToast(`已在本地建立大計畫：${trimmedName}，正在同步至雲端...`);
-
-      // 2. ☁️ 背景異步寫入 Google Sheet，不再呼叫 loadSheetData() 避免延遲與覆蓋衝突！
-      if (state.dbConnected) {
-        try {
-          await sendGasPost({
-            action: "updateProjects",
-            projects: state.projects
-          });
-          showToast(`☁️ 新大計畫「${trimmedName}」已成功同步至 Google Sheet！`, "success");
-        } catch (err) {
-          console.error(err);
-          showToast("同步雲端計畫失敗", "error");
-        }
-      } else {
-        localStorage.setItem('reporting_html_projects', JSON.stringify(state.projects));
-      }
+      renderActiveTab();
+      showToast(`已建立計畫：${name.trim()}`);
+      if (state.dbConnected) sendGasPost({ action: "updateProjects", projects: state.projects });
+      else localStorage.setItem('reporting_html_projects', JSON.stringify(state.projects));
     }
 
-    // --- 編輯計畫 Modal 開關與操作 ---
     function openProjectEditModal(projectId) {
-      const proj = state.projects.find(p => p.id === projectId);
-      if (!proj) return;
-
-      state.editingProject = JSON.parse(JSON.stringify(proj)); // 深拷貝
+      state.editingProject = JSON.parse(JSON.stringify(state.projects.find(p => p.id === projectId)));
       renderProjectEditModalContent();
       document.getElementById('project-edit-modal').classList.remove('hidden');
     }
@@ -1304,320 +1085,87 @@
       const content = document.getElementById('project-edit-modal-content');
       const proj = state.editingProject;
       if (!proj) return;
-
-      let taskInputsHtml = '';
-      proj.tasks.forEach((t, index) => {
-        taskInputsHtml += `
-          <div class="flex gap-2 items-center">
-            <input type="text" value="${t}" onchange="updateEditingTaskName(${index}, this.value)" 
-              class="flex-1 border border-slate-300 rounded px-2.5 py-1 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
-            <button type="button" onclick="removeEditingTask(${index})" class="text-rose-500 hover:text-rose-700 text-xs font-bold px-1.5">
-              移除
-            </button>
-          </div>
-        `;
+      let html = `<div class="space-y-3"><input type="text" value="${proj.name}" onchange="state.editingProject.name=this.value" class="w-full border rounded p-2 text-xs" />`;
+      proj.tasks.forEach((t, i) => {
+        html += `<div class="flex gap-2"><input type="text" value="${t}" onchange="state.editingProject.tasks[${i}]=this.value" class="flex-1 border rounded p-1 text-xs" /></div>`;
       });
-
-      content.innerHTML = `
-        <div class="space-y-3">
-          <div class="space-y-1">
-            <label class="text-xs font-bold text-slate-500">主計畫項目名稱：</label>
-            <input type="text" value="${proj.name}" onchange="state.editingProject.name = this.value"
-              class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
-          </div>
-
-          <div class="space-y-2">
-            <label class="text-xs font-bold text-slate-500 block">子任務细項列表：</label>
-            <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
-              ${taskInputsHtml}
-            </div>
-            <button type="button" onclick="addEditingTaskPlaceholder()" class="w-full border border-dashed border-slate-300 hover:border-slate-400 text-slate-500 py-1.5 text-xs font-bold rounded-lg transition text-center block mt-2">
-              ➕ 點此追加一列子任務
-            </button>
-          </div>
-
-          <div class="pt-3 flex gap-3">
-            <button type="button" onclick="closeProjectEditModal()" class="w-1/2 border border-slate-300 py-2 rounded-lg text-sm text-slate-600 transition">
-              取消
-            </button>
-            <button type="button" onclick="saveProjectEdit()" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg text-sm transition">
-              確認保存修改
-            </button>
-          </div>
-        </div>
-      `;
-    }
-
-    function updateEditingTaskName(index, value) {
-      if (state.editingProject) {
-        state.editingProject.tasks[index] = value;
-      }
-    }
-
-    function removeEditingTask(index) {
-      if (state.editingProject) {
-        state.editingProject.tasks = state.editingProject.tasks.filter((_, idx) => idx !== index);
-        renderProjectEditModalContent();
-      }
-    }
-
-    function addEditingTaskPlaceholder() {
-      if (state.editingProject) {
-        state.editingProject.tasks.push("新任務名稱");
-        renderProjectEditModalContent();
-      }
+      html += `<button onclick="saveProjectEdit()" class="w-full bg-indigo-600 text-white py-2 rounded text-xs font-bold mt-3">儲存修改</button></div>`;
+      content.innerHTML = html;
     }
 
     function saveProjectEdit() {
-      const proj = state.editingProject;
-      if (!proj) return;
-
-      const idx = state.projects.findIndex(p => p.id === proj.id);
-      if (idx >= 0) {
-        state.projects[idx] = proj;
-      }
-      onDataLoaded();
-      showToast("計畫修改已保存，正在背景同步至雲端...");
+      const idx = state.projects.findIndex(p => p.id === state.editingProject.id);
+      if (idx >= 0) state.projects[idx] = state.editingProject;
+      renderActiveTab();
       closeProjectEditModal();
-
-      if (state.dbConnected) {
-        sendGasPost({
-          action: "updateProjects",
-          projects: state.projects
-        }).then(() => {
-          showToast("☁️ 雲端配置修改已同步儲存成功！", "success");
-        }).catch(err => {
-          console.error(err);
-          showToast("雲端同步修改失敗", "error");
-        });
-      } else {
-        localStorage.setItem('reporting_html_projects', JSON.stringify(state.projects));
-      }
+      showToast("計畫已更新");
+      if (state.dbConnected) sendGasPost({ action: "updateProjects", projects: state.projects });
+      else localStorage.setItem('reporting_html_projects', JSON.stringify(state.projects));
     }
 
-    // =========================================================================
-    // 【🌟 渲染：成員帳號與密碼管理面板 🌟】
-    // =========================================================================
     function renderTeacherUsersPanel() {
       const tbody = document.getElementById('users-table-body');
       tbody.innerHTML = '';
-
       state.users.forEach((u, index) => {
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 transition-all";
-        tr.innerHTML = `
-          <td class="p-3">
-            <input type="text" value="${u.uid}" onchange="updateUserField(${index}, 'uid', this.value)" 
-              class="border border-slate-300 rounded px-2 py-1 text-xs w-28 font-mono bg-slate-100 text-slate-500 focus:outline-none" readonly />
-          </td>
-          <td class="p-3">
-            <select onchange="updateUserField(${index}, 'dept', this.value)" 
-              class="border border-slate-300 rounded px-2 py-1 text-xs bg-white focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-              <option value="醫工所" ${u.dept === '醫工所' ? 'selected' : ''}>醫工所</option>
-              <option value="人智所" ${u.dept === '人智所' ? 'selected' : ''}>人智所</option>
-              <option value="老師" ${u.dept === '老師' ? 'selected' : ''}>老師</option>
-            </select>
-          </td>
-          <td class="p-3">
-            <input type="text" value="${u.name}" onchange="updateUserField(${index}, 'name', this.value)" 
-              class="border border-slate-300 rounded px-2 py-1 text-xs w-36 font-semibold focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
-          </td>
-          <td class="p-3">
-            <select onchange="updateUserField(${index}, 'role', this.value)" 
-              class="border border-slate-300 rounded px-2 py-1 text-xs bg-white focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-              <option value="student" ${u.role === 'student' ? 'selected' : ''}>學生 (student)</option>
-              <option value="teacher" ${u.role === 'teacher' ? 'selected' : ''}>老師 (teacher)</option>
-            </select>
-          </td>
-          <td class="p-3">
-            <input type="text" value="${u.password}" onchange="updateUserField(${index}, 'password', this.value)" 
-              class="border border-slate-300 rounded px-2 py-1 text-xs w-32 font-mono font-bold focus:ring-1 focus:ring-indigo-500 focus:outline-none" />
-          </td>
-          <td class="p-3 text-center">
-            <button onclick="removeUserRow(${index})" class="text-rose-500 hover:text-rose-700 text-xs font-bold transition">
-              刪除
-            </button>
-          </td>
-        `;
-        tbody.appendChild(tr);
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50">
+            <td class="p-3"><input type="text" value="${u.uid}" readonly class="w-28 text-xs bg-slate-100 p-1 rounded" /></td>
+            <td class="p-3"><select onchange="state.users[${index}].dept=this.value" class="text-xs border rounded p-1"><option value="醫工所" ${u.dept==='醫工所'?'selected':''}>醫工所</option><option value="人智所" ${u.dept==='人智所'?'selected':''}>人智所</option><option value="老師" ${u.dept==='老師'?'selected':''}>老師</option></select></td>
+            <td class="p-3"><input type="text" value="${u.name}" onchange="state.users[${index}].name=this.value" class="text-xs border rounded p-1 w-32" /></td>
+            <td class="p-3"><select onchange="state.users[${index}].role=this.value" class="text-xs border rounded p-1"><option value="student" ${u.role==='student'?'selected':''}>學生</option><option value="teacher" ${u.role==='teacher'?'selected':''}>老師</option></select></td>
+            <td class="p-3"><input type="text" value="${u.password}" onchange="state.users[${index}].password=this.value" class="text-xs border rounded p-1 w-24" /></td>
+            <td class="p-3 text-center"><button onclick="state.users.splice(${index},1);renderTeacherUsersPanel();" class="text-rose-500 text-xs font-bold">刪除</button></td>
+          </tr>`;
       });
-    }
-
-    function updateUserField(index, field, value) {
-      if (state.users[index]) {
-        state.users[index][field] = value;
-      }
     }
 
     function addNewUserRow() {
-      const randomIdNum = Math.floor(Math.random() * 10000);
-      const newId = `user-${randomIdNum}`;
-      state.users.push({
-        uid: newId,
-        name: "請輸入姓名",
-        role: "student",
-        password: "1234",
-        dept: "醫工所"
-      });
+      state.users.push({ uid: `user-${Date.now()}`, name: "新成員", role: "student", password: "123", dept: "醫工所" });
       renderTeacherUsersPanel();
-      showToast("已在名單最下方新增一名預設成員，請修改好資料後點擊下方儲存按鈕！", "warning");
     }
-
-    // 避開 confirm 限制 of 自訂確認刪除
-    let userIndexToDelete = null;
-    function removeUserRow(index) {
-      userIndexToDelete = index;
-      const targetUser = state.users[index];
-      document.getElementById('confirm-delete-text').textContent = `您確定要將「${targetUser.name}」從成員名單中移除嗎？`;
-      document.getElementById('confirm-delete-modal').classList.remove('hidden');
-    }
-
-    function closeConfirmDeleteModal() {
-      document.getElementById('confirm-delete-modal').classList.add('hidden');
-      userIndexToDelete = null;
-    }
-
-    document.getElementById('confirm-delete-btn').onclick = function() {
-      if (userIndexToDelete !== null) {
-        const deletedName = state.users[userIndexToDelete].name;
-        state.users.splice(userIndexToDelete, 1);
-        renderTeacherUsersPanel();
-        showToast("已於名單中暫時移除「" + deletedName + "」，請記得點擊下方進行存檔！", "warning");
-      }
-      closeConfirmDeleteModal();
-    };
 
     function saveUsersToCloud() {
-      showToast("正在上傳並更新成員密碼列表至雲端，請稍後...");
-      
+      showToast("儲存成員名單中...");
       if (state.dbConnected) {
-        sendGasPost({
-          action: "updateUsers",
-          users: state.users
-        }).then(() => {
-          showToast("☁️ Google Sheet 成員資料已成功覆蓋同步！", "success");
-          loadSheetData(); // 重新抓取並同步最新的前台狀態
-        }).catch(err => {
-          console.error(err);
-          showToast("同步成員名單失敗", "error");
-        });
+        sendGasPost({ action: "updateUsers", users: state.users }).then(() => loadSheetData());
       } else {
         localStorage.setItem('reporting_html_users', JSON.stringify(state.users));
-        setupLoginInterface(); // 同步重整登入下拉清單
-        showToast("🎉 [本地模式] 成員修改名單已保存至快取中！");
+        setupLoginInterface();
+        showToast("已存至本地快取！");
       }
     }
 
-    // =========================================================================
-    // 【渲染：教師端數據統計與圖表】
-    // =========================================================================
     function renderTeacherAnalyticsPanel() {
       const memberList = document.getElementById('member-analytics-list');
-      const projectList = document.getElementById('project-analytics-list');
-
       memberList.innerHTML = '';
-      projectList.innerHTML = '';
-
       state.users.filter(u => u.role === 'student').forEach(user => {
         const sub = state.submissions.find(s => s.userId === user.uid && s.week === state.selectedWeek);
         const hrs = sub ? sub.totalHours : 0;
-        const percentage = Math.min(100, (hrs / 40) * 100);
-
-        const row = document.createElement('div');
-        row.className = "space-y-1.5";
-        row.innerHTML = `
-          <div class="flex justify-between text-xs text-slate-600 font-bold">
-            <span>${user.name} (${user.dept})</span>
-            <span>${hrs} 小時</span>
-          </div>
-          <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
-            <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
-          </div>
-        `;
-        memberList.appendChild(row);
+        memberList.innerHTML += `<div class="space-y-1"><div class="flex justify-between text-xs font-bold"><span>${user.name}</span><span>${hrs} 小時</span></div><div class="bg-slate-200 h-2 rounded-full overflow-hidden"><div class="bg-emerald-500 h-full" style="width: ${Math.min(100, (hrs/40)*100)}%"></div></div></div>`;
       });
-
-      state.projects.forEach(proj => {
-        let projTotal = 0;
-        state.submissions.filter(s => s.week === state.selectedWeek).forEach(sub => {
-          Object.entries(sub.hours || {}).forEach(([k, v]) => {
-            if (k.startsWith(proj.id)) {
-              projTotal += parseFloat(v) || 0;
-            }
-          });
-        });
-
-        if (projTotal === 0) return;
-
-        const percentage = Math.min(100, (projTotal / 50) * 100);
-        const row = document.createElement('div');
-        row.className = "space-y-1.5";
-        row.innerHTML = `
-          <div class="flex justify-between text-xs text-slate-600 font-bold">
-            <span>${proj.name}</span>
-            <span>共累計投入 ${projTotal} 小時</span>
-          </div>
-          <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
-            <div class="h-full bg-indigo-500 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
-          </div>
-        `;
-        projectList.appendChild(row);
-      });
-
-      if (projectList.children.length === 0) {
-        projectList.innerHTML = `<p class="text-center text-xs py-6 text-slate-400">目前本週尚無任何計畫專案被分配到工時</p>`;
-      }
     }
 
-    // =========================================================================
-    // 【匯出：時數數據 CSV】
-    // =========================================================================
     function exportToCSV() {
-      let headers = ['週別', '姓名', '項目與子任務', '申報時數', '送出日期'];
+      let headers = ['週別', '姓名', '項目', '時數', '日期'];
       let rows = [];
-
-      const weeklySubs = state.submissions.filter(s => s.week === state.selectedWeek);
-
-      weeklySubs.forEach(sub => {
-        Object.entries(sub.hours || {}).forEach(([key, val]) => {
-          const [projId, task] = key.split('_');
-          const projName = state.projects.find(p => p.id === projId)?.name || projId;
-          rows.push([sub.week, sub.userName, `${projName} - ${task}`, val, new Date(sub.updatedAt).toLocaleDateString()]);
-        });
-        (sub.customHours || []).forEach(item => {
-          rows.push([sub.week, sub.userName, `自訂追加項目 - ${item.taskName}`, item.hours, new Date(sub.updatedAt).toLocaleDateString()]);
+      state.submissions.filter(s => s.week === state.selectedWeek).forEach(sub => {
+        Object.entries(sub.hours || {}).forEach(([k, v]) => {
+          rows.push([sub.week, sub.userName, k, v, new Date(sub.updatedAt).toLocaleDateString()]);
         });
       });
-
-      if (rows.length === 0) {
-        showToast("本週尚無任何填報紀錄可供導出！", "warning");
-        return;
-      }
-
-      let csvContent = "\uFEFF";
-      csvContent += headers.join(",") + "\n";
-      rows.forEach(r => {
-        csvContent += r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",") + "\n";
-      });
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
+      if (rows.length === 0) { showToast("無數據可匯出", "warning"); return; }
+      let csv = "\uFEFF" + headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `科研項目週報時數彙整_${state.selectedWeek}.csv`);
-      document.body.appendChild(link);
+      link.href = URL.createObjectURL(blob);
+      link.download = `時數報表_${state.selectedWeek}.csv`;
       link.click();
-      document.body.removeChild(link);
-      showToast("🎉 本週 CSV 時數報表已成功下載！");
     }
 
     function getWeeklySubmissionCount() {
       return state.submissions.filter(s => s.week === state.selectedWeek).length;
     }
 
-    // --- 掛載全域物件連動 ---
-    window.initCurrentWeek = initCurrentWeek;
-    window.loadSheetData = loadSheetData;
     window.handleUserLogin = handleUserLogin;
     window.handleUserLogout = handleUserLogout;
     window.studentAddProjectTask = studentAddProjectTask;
@@ -1630,32 +1178,24 @@
     window.promptCreateProject = promptCreateProject;
     window.openProjectEditModal = openProjectEditModal;
     window.closeProjectEditModal = closeProjectEditModal;
-    window.updateEditingTaskName = updateEditingTaskName;
-    window.removeEditingTask = removeEditingTask;
-    window.addEditingTaskPlaceholder = addEditingTaskPlaceholder;
     window.saveProjectEdit = saveProjectEdit;
-    window.updateUserField = updateUserField;
     window.addNewUserRow = addNewUserRow;
-    window.removeUserRow = removeUserRow;
-    window.closeConfirmDeleteModal = closeConfirmDeleteModal;
     window.saveUsersToCloud = saveUsersToCloud;
     window.exportToCSV = exportToCSV;
 
-    // --- 頁面初始化進入點 ---
     window.onload = function() {
-      initCurrentWeek(); // 初始化當前週別與日期區間
-      loadSheetData();   // 載入 Google 試算表或本地快取的最新資料
+      initCurrentWeek();
+      loadSheetData();
     };
 
-    // 同時監聽 week 變更事件
     const weekPicker = document.getElementById('week-picker');
     if (weekPicker) {
       weekPicker.onchange = function(e) {
         if (e.target.value) {
           state.selectedWeek = e.target.value;
-          syncHoursStateWithSubmission();
+          isStudentPanelRendered = false; // 切換週別時重置渲染標記
           onDataLoaded();
-          showToast(`已切換查看週別：${state.selectedWeek}`);
+          showToast(`已切換週別：${state.selectedWeek}`);
         }
       };
     }
