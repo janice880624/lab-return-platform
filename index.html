@@ -6,23 +6,22 @@
   <title>實驗室時數申報平台</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js 圖表庫 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Inter', 'Noto Sans TC', sans-serif;
     }
-    /* 隱藏 Chrome/Safari 數字輸入框的上下箭頭 */
     input::-webkit-outer-spin-button,
     input::-webkit-inner-spin-button {
       -webkit-appearance: none;
       margin: 0;
     }
-    /* 隱藏 Firefox 數字輸入框的上下箭頭 */
     input[type=number] {
       -moz-appearance: textfield;
     }
-    /* 防止塗鴉劃分時選取文字 */
     .no-select {
       user-select: none;
       -webkit-user-select: none;
@@ -48,7 +47,6 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-3">
-        <!-- 雲端連線狀態 -->
         <span id="db-status-badge" class="px-2.5 py-1 text-xs rounded-full flex items-center gap-1.5 font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20">
           <span class="w-2 h-2 rounded-full bg-amber-400"></span>
           連線檢測中...
@@ -57,7 +55,7 @@
     </div>
   </header>
 
-  <!-- 目前登入狀態狀態條 -->
+  <!-- 目前登入狀態條 -->
   <div id="user-status-bar" class="bg-slate-800 text-white text-xs px-4 py-2.5 border-t border-slate-700 hidden shrink-0">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
       <span id="user-status-text" class="font-medium">👤 目前登入：載入中...</span>
@@ -69,7 +67,7 @@
 
   <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
 
-    <!-- ================= 0. 登入驗證頁面 (未登入時呈現) ================= -->
+    <!-- 0. 登入頁面 -->
     <div id="login-view" class="max-w-md mx-auto my-12 bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
       <div class="bg-indigo-600 text-white p-6 text-center">
         <h2 class="text-xl font-bold">👤 登入</h2>
@@ -101,32 +99,28 @@
       </div>
     </div>
 
-    <!-- ================= 系統主功能區 (已登入時才會被 JS 顯示) ================= -->
+    <!-- 系統主功能區 -->
     <div id="main-dashboard" class="space-y-6 hidden">
-      <!-- 全局控制列：選擇週別與切換分頁 -->
+      <!-- 全局控制列：週別與分頁 -->
       <div class="bg-white rounded-xl shadow-sm p-4 flex flex-col sm:flex-row justify-between items-center gap-4 border border-slate-200">
-        <!-- 週別與日期區間選擇器 -->
         <div class="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
           <div class="flex items-center gap-3 w-full sm:w-auto">
             <label class="text-sm font-semibold text-slate-600 shrink-0">📅 選擇週別：</label>
             <input type="week" id="week-picker" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none w-full sm:w-auto bg-slate-50" />
           </div>
-          <!-- 動態計算的時間區段標籤 -->
           <span id="week-range-display" class="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-lg shrink-0 text-center sm:text-left">
             計算中...
           </span>
         </div>
 
-        <!-- 分頁標籤 -->
-        <div id="tab-container" class="flex rounded-lg bg-slate-100 p-1 w-full sm:w-auto">
+        <div id="tab-container" class="flex flex-wrap rounded-lg bg-slate-100 p-1 w-full sm:w-auto">
           <!-- 動態依身份切換載入 -->
         </div>
       </div>
 
+      <!-- 學生：時數填報頁面 -->
       <div id="student-report-view" class="grid grid-cols-1 lg:grid-cols-3 gap-6 hidden">
-        <!-- 左側：填報主要區域 (可切換 模式A:卡片 / 模式B:課表) -->
         <div class="lg:col-span-2 space-y-4">
-          <!-- 填寫模式切換器 -->
           <div class="bg-white rounded-xl p-3 border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
             <div class="flex items-center gap-2">
               <span class="text-xs font-bold text-slate-600">💡 選擇填寫習慣模式：</span>
@@ -141,16 +135,11 @@
             </div>
           </div>
 
-          <!-- 模式 A：傳統卡片列表 -->
           <div id="report-mode-cards-container" class="space-y-6">
-            <div id="project-cards-container" class="space-y-6">
-              <!-- 由 JS 動態繪製專案卡片 -->
-            </div>
+            <div id="project-cards-container" class="space-y-6"></div>
           </div>
 
-          <!-- 模式 B：週課表 / 行事曆塗鴉模式 (0.5 小時區塊) -->
           <div id="report-mode-timetable-container" class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-4 hidden">
-            <!-- 塗鴉調色盤選擇區 -->
             <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
@@ -162,36 +151,24 @@
                 </span>
               </div>
 
-              <!-- 調色盤與選擇器 -->
               <div class="flex flex-wrap items-center gap-2 pt-1">
-                <select id="timetable-project-select" onchange="handleTimetableProjChange()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white font-semibold focus:ring-1 focus:ring-indigo-500 focus:outline-none max-w-xs">
-                  <!-- 動態載入專案 -->
-                </select>
-                <select id="timetable-task-select" onchange="handleTimetableTaskChange()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white font-semibold focus:ring-1 focus:ring-indigo-500 focus:outline-none max-w-xs">
-                  <!-- 動態載入子任務 -->
-                </select>
+                <select id="timetable-project-select" onchange="handleTimetableProjChange()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white font-semibold focus:ring-1 focus:ring-indigo-500 focus:outline-none max-w-xs"></select>
+                <select id="timetable-task-select" onchange="handleTimetableTaskChange()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white font-semibold focus:ring-1 focus:ring-indigo-500 focus:outline-none max-w-xs"></select>
                 <button type="button" onclick="selectEraserMode()" id="eraser-btn" class="text-xs border border-slate-300 hover:bg-slate-200 px-3 py-1.5 rounded-lg font-bold text-slate-600 transition flex items-center gap-1">
                   🧹 橡皮擦 (清除時數)
                 </button>
               </div>
 
-              <!-- 目前選取的塗鴉畫筆指示 -->
-              <div id="active-brush-indicator" class="text-xs font-bold flex items-center gap-2 pt-1">
-                <!-- 動態顯示目前畫筆 -->
-              </div>
+              <div id="active-brush-indicator" class="text-xs font-bold flex items-center gap-2 pt-1"></div>
             </div>
 
-            <!-- 時間軸選擇器 (過濾顯示時段) -->
             <div class="flex items-center justify-between text-xs text-slate-500 border-b border-slate-100 pb-2">
               <span class="font-bold">📅 本週一至週日時間格 (每格 0.5 小時，共 48 時段)</span>
-              <div class="flex items-center gap-2">
-                <button type="button" onclick="clearAllTimetableCells()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold underline">
-                  清空課表格子
-                </button>
-              </div>
+              <button type="button" onclick="clearAllTimetableCells()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold underline">
+                清空課表格子
+              </button>
             </div>
 
-            <!-- 可滾動的 0.5h 課表網格 -->
             <div class="overflow-x-auto max-h-[520px] overflow-y-auto border border-slate-200 rounded-lg relative">
               <table class="w-full border-collapse text-center text-xs">
                 <thead class="sticky top-0 bg-slate-800 text-white z-10">
@@ -206,20 +183,14 @@
                     <th class="p-2 border border-slate-700 min-w-[70px]">週日</th>
                   </tr>
                 </thead>
-                <tbody id="timetable-grid-body" class="bg-white divide-y divide-slate-100">
-                  <!-- 由 JS 動態繪製 48 個 0.5h 格子 -->
-                </tbody>
+                <tbody id="timetable-grid-body" class="bg-white divide-y divide-slate-100"></tbody>
               </table>
             </div>
 
-            <!-- 課表下方：展示傳統卡片模式手動輸入的額外時數總覽 (非特定時段) -->
-            <div id="timetable-cards-summary" class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 mt-4">
-              <!-- JS 動態生成摘要列表 -->
-            </div>
+            <div id="timetable-cards-summary" class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 mt-4"></div>
           </div>
         </div>
 
-        <!-- 右側：申報摘要 -->
         <div class="space-y-6">
           <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden sticky top-6">
             <div class="bg-indigo-600 text-white p-4">
@@ -228,19 +199,14 @@
             </div>
 
             <div class="p-4 space-y-5">
-              <!-- 累積時數圓盤 -->
               <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
                 <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider">本週已申報累計</p>
                 <p id="total-hours-badge" class="text-5xl font-black text-indigo-600 my-2">0</p>
                 <p class="text-[11px] text-slate-400">時數點擊下方「直接送出」後將即時呈報老師與備份課表</p>
               </div>
 
-              <!-- 單向送出狀態提示 -->
-              <div id="submission-status-card" class="bg-slate-100 p-3 rounded-lg border border-slate-200">
-                <!-- 動態變更 -->
-              </div>
+              <div id="submission-status-card" class="bg-slate-100 p-3 rounded-lg border border-slate-200"></div>
 
-              <!-- 老師留下的意見 -->
               <div id="teacher-feedback-card" class="bg-indigo-50 text-indigo-900 p-3 rounded-lg border border-indigo-100 hidden">
                 <span class="text-xs font-bold text-indigo-800 block">💬 老師對本週的回饋意見：</span>
                 <p id="teacher-feedback-text" class="text-xs text-slate-700 mt-1 italic">"-"</p>
@@ -254,6 +220,7 @@
         </div>
       </div>
 
+      <!-- 學生：歷史紀錄頁面 -->
       <div id="student-history-view" class="bg-white rounded-xl shadow-sm p-6 border border-slate-200 hidden">
         <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">📂 我的時數回報歷史</h2>
         <div class="overflow-x-auto">
@@ -267,34 +234,88 @@
                 <th class="p-3 font-semibold">老師回饋</th>
               </tr>
             </thead>
-            <tbody id="history-table-body" class="divide-y divide-slate-100 text-sm">
-              <!-- 動態繪製 -->
-            </tbody>
+            <tbody id="history-table-body" class="divide-y divide-slate-100 text-sm"></tbody>
           </table>
         </div>
       </div>
 
+      <!-- 老師：審閱與看板頁面 -->
       <div id="teacher-review-view" class="space-y-6 hidden">
+        <!-- 頂部 KPI 數據統計概覽卡片 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <span class="text-xs font-bold text-slate-400">⚡ 本週實驗室總工時</span>
+            <div class="flex items-baseline gap-1 mt-2">
+              <span id="kpi-total-hours" class="text-2xl font-black text-indigo-600">0</span>
+              <span class="text-xs text-slate-500 font-bold">小時</span>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <span class="text-xs font-bold text-slate-400">📈 已回報學生 / 總學生</span>
+            <div class="flex items-baseline gap-1 mt-2">
+              <span id="kpi-submitted-count" class="text-2xl font-black text-emerald-600">0</span>
+              <span id="kpi-total-students" class="text-xs text-slate-500 font-bold">/ 0 人</span>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <span class="text-xs font-bold text-slate-400">👥 平均學生每週投入</span>
+            <div class="flex items-baseline gap-1 mt-2">
+              <span id="kpi-avg-hours" class="text-2xl font-black text-sky-600">0</span>
+              <span class="text-xs text-slate-500 font-bold">小時 / 人</span>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <span class="text-xs font-bold text-slate-400">📌 本週活躍研究計畫</span>
+            <div class="flex items-baseline gap-1 mt-2">
+              <span id="kpi-active-projects" class="text-2xl font-black text-amber-600">0</span>
+              <span class="text-xs text-slate-500 font-bold">個計畫</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 未申報成員催繳提示欄 -->
+        <div id="unsubmitted-students-card" class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <span class="text-amber-600 text-lg">🔔</span>
+            <div>
+              <h4 class="text-xs font-bold text-amber-900">本週尚未提交時數學生名單：</h4>
+              <div id="unsubmitted-list-tags" class="flex flex-wrap gap-1.5 mt-1"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 看板主要列表 -->
         <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-4 mb-4 gap-4">
             <div>
-              <h2 class="text-lg font-bold text-slate-800">📋 學生時數直接回報看板</h2>
-              <p class="text-xs text-slate-400 mt-1">此處即時呈現學生單向提交的數據，資料已在 Google Sheet 同步存檔</p>
+              <h2 class="text-lg font-bold text-slate-800">📋 學生時數回報看板</h2>
+              <p class="text-xs text-slate-400 mt-1">此處即時呈現學生提交數據，點擊卡片可查看完整塗鴉課表細節與給予回饋</p>
             </div>
-            <button onclick="exportToCSV()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              匯出本週時數 CSV
-            </button>
+            
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+              <div class="flex items-center gap-1.5 shrink-0">
+                <label class="text-xs font-bold text-slate-500">所別：</label>
+                <select id="teacher-dept-filter" onchange="renderTeacherReviewPanel()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white font-semibold focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                  <option value="ALL">全部所別</option>
+                  <option value="醫工所">醫工所</option>
+                  <option value="人智所">人智所</option>
+                </select>
+              </div>
+
+              <button onclick="exportToCSV()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                匯出 CSV
+              </button>
+            </div>
           </div>
 
-          <div id="submissions-list" class="space-y-4">
-            <!-- 老師看見的申報清單 -->
-          </div>
+          <div id="submissions-list" class="space-y-4"></div>
         </div>
       </div>
 
+      <!-- 老師：計畫管理 -->
       <div id="teacher-config-view" class="space-y-6 hidden">
         <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
           <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
@@ -307,18 +328,17 @@
             </button>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="config-projects-container">
-            <!-- 自訂大項目的配置 -->
-          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="config-projects-container"></div>
         </div>
       </div>
 
+      <!-- 老師：成員帳號與密碼管理 -->
       <div id="teacher-users-view" class="space-y-6 hidden">
         <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
           <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
             <div>
               <h2 class="text-lg font-bold text-slate-800">👥 實驗室成員帳號與密碼管理</h2>
-              <p class="text-xs text-slate-400 mt-1">此處名單與 Google Sheet 的 Users 工作表即時同步。您可以修改成員 ID、所別、姓名或密碼，並一鍵同步儲存！</p>
+              <p class="text-xs text-slate-400 mt-1">此處名單與 Google Sheet 的 Users 工作表即時同步。</p>
             </div>
             <button onclick="addNewUserRow()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 rounded-lg transition shadow-sm">
               ➕ 新增實驗室成員
@@ -329,7 +349,7 @@
             <table class="w-full text-left border-collapse">
               <thead>
                 <tr class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500">
-                  <th class="p-3 font-semibold">成員 ID (可自由編輯)</th>
+                  <th class="p-3 font-semibold">成員 ID</th>
                   <th class="p-3 font-semibold">所別科系</th>
                   <th class="p-3 font-semibold">姓名</th>
                   <th class="p-3 font-semibold">系統角色</th>
@@ -337,9 +357,7 @@
                   <th class="p-3 font-semibold text-center">操作</th>
                 </tr>
               </thead>
-              <tbody id="users-table-body" class="divide-y divide-slate-100 text-xs">
-                <!-- 動態繪製 -->
-              </tbody>
+              <tbody id="users-table-body" class="divide-y divide-slate-100 text-xs"></tbody>
             </table>
           </div>
 
@@ -351,29 +369,129 @@
         </div>
       </div>
 
-      <div id="teacher-analytics-view" class="bg-white rounded-xl shadow-sm p-6 border border-slate-200 hidden">
-        <h2 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">📊 本週科研工時統計</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <!-- 各成員時數佔比 -->
-          <div class="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
-            <h3 class="font-bold text-slate-700 text-xs mb-4 uppercase tracking-wider">各成員本周參與時數</h3>
-            <div id="member-analytics-list" class="space-y-4">
-              <!-- 成員圖條 -->
-            </div>
+      <!-- 💡 老師：升級版投入佔比與科研圖表分析 -->
+      <div id="teacher-analytics-view" class="space-y-6 hidden">
+        
+        <!-- 頂部分析控制欄 -->
+        <div class="bg-white rounded-xl shadow-sm p-4 border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <span>📊 科研工時與投入佔比視覺化圖表</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">多維度分析計畫佔比、成員貢獻與跨週趨勢數據</p>
           </div>
 
-          <!-- 專案分配排行 -->
-          <div class="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
-            <h3 class="font-bold text-slate-700 text-xs mb-4 uppercase tracking-wider">各計畫案投入總時數</h3>
-            <div id="project-analytics-list" class="space-y-4">
-              <!-- 專案投入比 -->
+          <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+            <div class="flex items-center gap-1.5 shrink-0">
+              <label class="text-xs font-bold text-slate-500">統計範疇：</label>
+              <select id="analytics-range-filter" onchange="renderTeacherAnalyticsPanel()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white font-semibold focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                <option value="WEEK">單週數據 (目前選取週)</option>
+                <option value="ALL">歷史全期數據</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-1.5 shrink-0">
+              <label class="text-xs font-bold text-slate-500">所別：</label>
+              <select id="analytics-dept-filter" onchange="renderTeacherAnalyticsPanel()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white font-semibold focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                <option value="ALL">全部所別</option>
+                <option value="醫工所">醫工所</option>
+                <option value="人智所">人智所</option>
+              </select>
             </div>
           </div>
         </div>
+
+        <!-- 四大核心洞察 Key Metrics Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+            <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-lg">🎯</div>
+            <div>
+              <span class="text-[11px] font-bold text-slate-400 block">最熱門研究計畫</span>
+              <span id="insight-top-project" class="text-sm font-black text-slate-800 truncate block max-w-[150px]">載入中...</span>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+            <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl font-bold text-lg">🏆</div>
+            <div>
+              <span class="text-[11px] font-bold text-slate-400 block">最高投入成員</span>
+              <span id="insight-top-student" class="text-sm font-black text-slate-800 truncate block max-w-[150px]">載入中...</span>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+            <div class="p-3 bg-sky-50 text-sky-600 rounded-xl font-bold text-lg">⚡</div>
+            <div>
+              <span class="text-[11px] font-bold text-slate-400 block">人均研究工時</span>
+              <span id="insight-avg-hours" class="text-sm font-black text-slate-800 block">0 小時</span>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+            <div class="p-3 bg-rose-50 text-rose-600 rounded-xl font-bold text-lg">⚖️</div>
+            <div>
+              <span class="text-[11px] font-bold text-slate-400 block">研究負荷提醒</span>
+              <span id="insight-workload-status" class="text-xs font-bold text-slate-700 block">載入中...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 圖表區 第一列：計畫投入環狀圖 & 所別投入圓餅圖 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-5 border border-slate-200 flex flex-col justify-between">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                各研究計畫工時投入占比 (Doughnut Chart)
+              </h3>
+              <span id="chart-total-label" class="text-xs text-indigo-600 bg-indigo-50 font-bold px-2.5 py-1 rounded-lg">總計: 0 小時</span>
+            </div>
+            <div class="relative w-full h-[300px] flex items-center justify-center">
+              <canvas id="chart-project-pie"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-200 flex flex-col justify-between">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                各科系所別工時比重
+              </h3>
+            </div>
+            <div class="relative w-full h-[300px] flex items-center justify-center">
+              <canvas id="chart-dept-pie"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- 圖表區 第二列：成員個人工時排行 & 近四周歷史走勢 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-200">
+            <h3 class="font-bold text-sm text-slate-800 mb-4 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+              學生個人研究投入時間與排行 (Bar Chart)
+            </h3>
+            <div class="relative w-full h-[320px]">
+              <canvas id="chart-member-bar"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-200">
+            <h3 class="font-bold text-sm text-slate-800 mb-4 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+              跨週實驗室總工時與人均走勢 (Weekly Trend Chart)
+            </h3>
+            <div class="relative w-full h-[320px]">
+              <canvas id="chart-weekly-trend"></canvas>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </main>
 
+  <!-- 彈窗：老師回饋 Modal -->
   <div id="feedback-modal" class="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
       <div class="bg-slate-800 text-white p-4 flex justify-between items-center">
@@ -387,7 +505,7 @@
       <div class="p-5 space-y-4">
         <div>
           <span class="text-xs text-slate-400 font-bold block mb-1">申報人與週別</span>
-          <p id="modal-target-info" class="font-bold text-slate-800 text-sm">陳小明 - 2026-W24</p>
+          <p id="modal-target-info" class="font-bold text-slate-800 text-sm">載入中...</p>
         </div>
         <div class="space-y-1">
           <label class="text-xs text-slate-500 font-bold">填寫回饋（將直接推送在學生的申報面板中）</label>
@@ -405,6 +523,58 @@
     </div>
   </div>
 
+  <!-- 彈窗：老師檢視學生 0.5h 課表檢視器 Modal -->
+  <div id="student-detail-modal" class="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+      <div class="bg-slate-900 text-white p-4 flex justify-between items-center shrink-0">
+        <div>
+          <h3 id="modal-student-name" class="font-bold text-base">學生詳細行事曆與課表細節</h3>
+          <p id="modal-student-sub" class="text-xs text-slate-400">載入中...</p>
+        </div>
+        <button onclick="closeStudentDetailModal()" class="text-slate-400 hover:text-white p-1">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4">
+        <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
+          <h4 class="text-xs font-bold text-indigo-900 mb-1">📊 申報項目彙整統計：</h4>
+          <div id="modal-student-breakdown" class="flex flex-wrap gap-2 pt-1"></div>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold text-slate-700">📅 學生還原週課表 (0.5 小時區塊網格)：</h4>
+          <div class="overflow-x-auto max-h-[380px] overflow-y-auto border border-slate-200 rounded-lg">
+            <table class="w-full border-collapse text-center text-xs">
+              <thead class="sticky top-0 bg-slate-800 text-white z-10">
+                <tr>
+                  <th class="p-2 border border-slate-700 w-16">時間</th>
+                  <th class="p-2 border border-slate-700 min-w-[70px]">週一</th>
+                  <th class="p-2 border border-slate-700 min-w-[70px]">週二</th>
+                  <th class="p-2 border border-slate-700 min-w-[70px]">週三</th>
+                  <th class="p-2 border border-slate-700 min-w-[70px]">週四</th>
+                  <th class="p-2 border border-slate-700 min-w-[70px]">週五</th>
+                  <th class="p-2 border border-slate-700 min-w-[70px]">週六</th>
+                  <th class="p-2 border border-slate-700 min-w-[70px]">週日</th>
+                </tr>
+              </thead>
+              <tbody id="modal-timetable-grid-body" class="bg-white divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end shrink-0">
+        <button onclick="closeStudentDetailModal()" class="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2 rounded-lg text-xs font-bold transition">
+          關閉檢視器
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈窗：計畫編輯 Modal -->
   <div id="project-edit-modal" class="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
       <div class="bg-slate-800 text-white p-4 flex justify-between items-center">
@@ -415,12 +585,11 @@
           </svg>
         </button>
       </div>
-      <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto" id="project-edit-modal-content">
-        <!-- 動態繪製編輯內容 -->
-      </div>
+      <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto" id="project-edit-modal-content"></div>
     </div>
   </div>
 
+  <!-- 彈窗：確認刪除 Modal -->
   <div id="confirm-delete-modal" class="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 border border-slate-200">
       <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1 text-rose-600">
@@ -454,10 +623,7 @@
       toast.innerHTML = `<span class="text-xs font-semibold">${message}</span>`;
       container.appendChild(toast);
 
-      setTimeout(() => {
-        toast.classList.remove('translate-y-2', 'opacity-0');
-      }, 50);
-
+      setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 50);
       setTimeout(() => {
         toast.classList.add('translate-y-2', 'opacity-0');
         setTimeout(() => toast.remove(), 300);
@@ -492,9 +658,7 @@
       const weekNum = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
       state.selectedWeek = `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
       const weekPicker = document.getElementById('week-picker');
-      if (weekPicker) {
-        weekPicker.value = state.selectedWeek;
-      }
+      if (weekPicker) weekPicker.value = state.selectedWeek;
     }
 
     const GAS_WEB_APP_URL = "https://lab-return-platform.janice-064.workers.dev/"; 
@@ -514,7 +678,6 @@
     ];
 
     const INITIAL_USERS = [];
-
     const DAY_NAMES = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
 
     const COLOR_MAPS = {
@@ -535,33 +698,38 @@
       dbConnected: false,
       currentUser: null,
       activeTab: 'report',
-      reportMode: 'cards', // 'cards' | 'timetable'
+      reportMode: 'cards',
       projects: INITIAL_PROJECTS,
       submissions: [],
       users: INITIAL_USERS,
       selectedWeek: "",
       hoursInput: {},  
       customTasks: [], 
-      timetableData: {}, // key: "day_slot" e.g. "0_28" (週一14:00~14:30) -> { projId, taskName }
-      activeBrush: null, // { projId, taskName } or 'eraser'
-      isMouseDown: false, // 是否按住塗鴉
+      timetableData: {}, 
+      activeBrush: null, 
+      isMouseDown: false, 
       editingProject: null,
       activeModalSubmission: null,
       deletingUserIndex: null
     };
 
+    // 儲存 Chart.js 實體以避免重複建立噴錯
+    let chartInstances = {
+      projectPie: null,
+      deptPie: null,
+      memberBar: null,
+      weeklyTrend: null
+    };
+
     let isStudentPanelRendered = false;
 
-    // 將 0~47 槽位轉成時間文字 (例: 28 -> start: "14:00", end: "14:30")
     function slotToTimeString(slot) {
       const startMinTotal = slot * 30;
       const startH = Math.floor(startMinTotal / 60);
       const startM = startMinTotal % 60;
-      
       const endMinTotal = (slot + 1) * 30;
       const endH = Math.floor(endMinTotal / 60);
       const endM = endMinTotal % 60;
-
       const fmt = (h, m) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
       return {
         label: fmt(startH, startM),
@@ -587,9 +755,7 @@
     async function loadSheetData() {
       if (!GAS_WEB_APP_URL) {
         setupLocalStorageFallback();
-        setTimeout(() => {
-          showToast("💡 尚未設定 Google Sheet 網址，已切換至「離線快取測試模式」！", "warning");
-        }, 1000);
+        setTimeout(() => { showToast("💡 尚未設定 Google Sheet 網址，切換至「離線測試模式」！", "warning"); }, 1000);
         return;
       }
       try {
@@ -608,9 +774,9 @@
         onDataLoaded();
         setupLoginInterface();
       } catch (err) {
-        console.warn("無法自 Google Sheet 載入資料，將啟用 LocalStorage Fallback：", err);
+        console.warn("無法自 Google Sheet 載入資料，啟用 LocalStorage Fallback：", err);
         setupLocalStorageFallback();
-        showToast("⚠️ 無法連線 Google Sheet，已切換為本地模擬測試模式。", "warning");
+        showToast("⚠️ 無法連線 Google Sheet，切換為本地模擬測試模式。", "warning");
       }
     }
 
@@ -629,15 +795,13 @@
     }
 
     function onDataLoaded() {
-      isStudentPanelRendered = false; // 重置渲染狀態，確保切換週別時數據精準對齊
+      isStudentPanelRendered = false;
       syncHoursStateWithSubmission();
       renderTabs();
       renderActiveTab();
       
       const weekRangeDisplay = document.getElementById('week-range-display');
-      if (weekRangeDisplay) {
-        weekRangeDisplay.textContent = getWeekDateRange(state.selectedWeek) || "計算中...";
-      }
+      if (weekRangeDisplay) weekRangeDisplay.textContent = getWeekDateRange(state.selectedWeek) || "計算中...";
     }
 
     async function saveProjectsState() {
@@ -656,7 +820,6 @@
         state.hoursInput = { ...match.hours };
         state.timetableData = {};
 
-        // 從 customHours 還原 0.5h 課表塗鴉
         const timetableItems = (match.customHours || []).filter(ch => ch.taskName && (
           ch.taskName.startsWith('__TIMETABLE_JSON__:') ||
           ch.taskName.includes('課表時段：') || 
@@ -664,7 +827,6 @@
         ));
         
         timetableItems.forEach(item => {
-          // 情況 A：全新濃縮單行 JSON 格式
           if (item.taskName.startsWith('__TIMETABLE_JSON__:')) {
             try {
               const jsonStr = item.taskName.replace('__TIMETABLE_JSON__:', '');
@@ -675,14 +837,11 @@
                 if (dayIdx >= 0) {
                   const [sH, sM] = r.time.split('~')[0].split(':').map(Number);
                   const [eH, eM] = r.time.split('~')[1].split(':').map(Number);
-
                   const startSlot = sH * 2 + (sM >= 30 ? 1 : 0);
                   let endSlot = eH * 2 + (eM >= 30 ? 1 : 0);
                   if (endSlot <= startSlot) endSlot = startSlot + 1;
 
-                  let matchedProjId = null;
-                  let matchedTaskName = null;
-
+                  let matchedProjId = null, matchedTaskName = null;
                   if (r.tag) {
                     for (const proj of state.projects) {
                       if (r.tag.startsWith(proj.id + '_')) {
@@ -703,68 +862,10 @@
                   }
                 }
               });
-            } catch (err) {
-              console.error("解析 JSON 課表失敗：", err);
-            }
-          }
-          // 情況 B：舊版純 JSON 備份
-          else if (item.taskName.startsWith('__TIMETABLE__:')) {
-            try {
-              const jsonStr = item.taskName.replace('__TIMETABLE__:', '');
-              const parsed = JSON.parse(jsonStr);
-              state.timetableData = { ...state.timetableData, ...parsed };
-            } catch (err) {
-              console.error("解析傳統 JSON 課表失敗：", err);
-            }
-          }
-          // 情況 C：相容逐行/多行中文課表文字格式
-          else {
-            const regex = /課表時段：(\S+)\s+(\d{2}:\d{2})~(\d{2}:\d{2})\s+\|\s+.*?\(\#([^)]+)\)/g;
-            let matchStr;
-            
-            while ((matchStr = regex.exec(item.taskName)) !== null) {
-              const [, dayName, startStr, endStr, tag] = matchStr;
-              const dayIdx = DAY_NAMES.indexOf(dayName);
-              
-              if (dayIdx >= 0) {
-                const [sH, sM] = startStr.split(':').map(Number);
-                const [eH, eM] = endStr.split(':').map(Number);
-
-                const startSlot = sH * 2 + (sM >= 30 ? 1 : 0);
-                let endSlot = eH * 2 + (eM >= 30 ? 1 : 0);
-                if (endSlot <= startSlot) endSlot = startSlot + 1;
-
-                let matchedProjId = null;
-                let matchedTaskName = null;
-
-                for (const proj of state.projects) {
-                  if (tag.startsWith(proj.id + '_')) {
-                    matchedProjId = proj.id;
-                    matchedTaskName = tag.substring(proj.id.length + 1);
-                    break;
-                  }
-                }
-
-                if (!matchedProjId) {
-                  const firstUnderscore = tag.indexOf('_');
-                  if (firstUnderscore !== -1) {
-                    matchedProjId = tag.substring(0, firstUnderscore);
-                    matchedTaskName = tag.substring(firstUnderscore + 1);
-                  } else {
-                    matchedProjId = tag;
-                    matchedTaskName = tag;
-                  }
-                }
-
-                for (let slot = startSlot; slot < endSlot; slot++) {
-                  state.timetableData[`${dayIdx}_${slot}`] = { projId: matchedProjId, taskName: matchedTaskName };
-                }
-              }
-            }
+            } catch (err) { console.error("解析 JSON 課表失敗：", err); }
           }
         });
 
-        // 過濾掉課表記錄，留下真實自訂任務
         state.customTasks = (match.customHours || []).filter(ch => !ch.taskName || (
           !ch.taskName.startsWith('__TIMETABLE_JSON__:') &&
           !ch.taskName.includes('課表時段：') && 
@@ -779,12 +880,8 @@
 
     function calculateCurrentTotal() {
       let sum = 0;
-      Object.values(state.hoursInput).forEach(val => {
-        if (val) sum += parseFloat(val) || 0;
-      });
-      state.customTasks.forEach(task => {
-        sum += parseFloat(task.hours) || 0;
-      });
+      Object.values(state.hoursInput).forEach(val => { if (val) sum += parseFloat(val) || 0; });
+      state.customTasks.forEach(task => { sum += parseFloat(task.hours) || 0; });
       return sum;
     }
 
@@ -817,34 +914,24 @@
         }
 
         nameSelect.className = "w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none";
-        
         let optionsHtml = `<option value="">-- 請選擇您的名字 --</option>`;
-        filteredUsers.forEach(u => {
-          optionsHtml += `<option value="${u.uid}">${u.name}</option>`;
-        });
+        filteredUsers.forEach(u => { optionsHtml += `<option value="${u.uid}">${u.name}</option>`; });
         nameSelect.innerHTML = optionsHtml;
       };
 
       nameSelect.onchange = function() {
-        if (nameSelect.value && nameSelect.value !== "warning") {
-          passSection.classList.remove('hidden');
-        } else {
-          passSection.classList.add('hidden');
-        }
+        if (nameSelect.value) passSection.classList.remove('hidden');
+        else passSection.classList.add('hidden');
       };
     }
 
     function handleUserLogin() {
       const nameSelect = document.getElementById('login-name');
       const passwordInput = document.getElementById('login-password');
-
       const userId = nameSelect.value;
       const pwd = passwordInput.value;
 
-      if (!userId || !pwd) {
-        showToast("請完整填寫姓名與密碼！", "warning");
-        return;
-      }
+      if (!userId || !pwd) { showToast("請完整填寫姓名與密碼！", "warning"); return; }
 
       const foundUser = state.users.find(u => u.uid === userId);
       if (!foundUser || String(foundUser.password) !== String(pwd)) {
@@ -894,12 +981,12 @@
       if (state.currentUser.role === 'student') {
         tabs.push({ id: 'report', label: '時數申報填寫' });
         tabs.push({ id: 'history', label: '申報歷史紀錄' });
-        if (state.activeTab !== 'report' && state.activeTab !== 'history') state.activeTab = 'report';
+        if (!['report', 'history'].includes(state.activeTab)) state.activeTab = 'report';
       } else {
         tabs.push({ id: 'review', label: `時數回報看板 (${getWeeklySubmissionCount()})` });
         tabs.push({ id: 'config', label: '計畫與子項目管理' });
         tabs.push({ id: 'users', label: '成員帳號與密碼管理' }); 
-        tabs.push({ id: 'analytics', label: '投入佔比圖表' });
+        tabs.push({ id: 'analytics', label: '投入佔比圖表分析' });
         if (!['review', 'config', 'users', 'analytics'].includes(state.activeTab)) state.activeTab = 'review';
       }
 
@@ -987,15 +1074,10 @@
           proj.tasks.forEach(task => {
             const key = `${proj.id}_${task}`;
             const inputEl = document.getElementById(`input_${key}`);
-            if (inputEl) {
-              const val = state.hoursInput[key] !== undefined ? state.hoursInput[key] : '';
-              inputEl.value = val;
-            }
+            if (inputEl) inputEl.value = state.hoursInput[key] !== undefined ? state.hoursInput[key] : '';
           });
         });
-        if (state.reportMode === 'timetable') {
-          renderTimetableGrid();
-        }
+        if (state.reportMode === 'timetable') renderTimetableGrid();
         return;
       }
 
@@ -1104,11 +1186,8 @@
       const projId = projSelect.value;
       const taskName = taskSelect.value;
 
-      if (projId && taskName) {
-        state.activeBrush = { projId, taskName };
-      } else {
-        state.activeBrush = null;
-      }
+      if (projId && taskName) state.activeBrush = { projId, taskName };
+      else state.activeBrush = null;
       updateActiveBrushIndicator();
     }
 
@@ -1129,7 +1208,7 @@
       if (!indicator) return;
 
       if (state.activeBrush === 'eraser') {
-        indicator.innerHTML = `<span class="px-2 py-0.5 rounded bg-slate-200 text-slate-800 border border-slate-300">🧹 當前畫筆：橡皮擦 (點擊格子可擦除時數)</span>`;
+        indicator.innerHTML = `<span class="px-2 py-0.5 rounded bg-slate-200 text-slate-800 border border-slate-300">🧹 當前畫筆：橡皮擦</span>`;
         if (eraserBtn) eraserBtn.className = "text-xs border border-rose-400 bg-rose-50 px-3 py-1.5 rounded-lg font-bold text-rose-700 transition flex items-center gap-1 shadow-sm";
       } else if (state.activeBrush && state.activeBrush.projId) {
         const proj = state.projects.find(p => p.id === state.activeBrush.projId);
@@ -1151,7 +1230,6 @@
       for (let slot = 0; slot < 48; slot++) {
         const tr = document.createElement('tr');
         const { label } = slotToTimeString(slot);
-        
         const isHourBoundary = slot % 2 === 0;
         const labelBg = isHourBoundary ? 'bg-slate-100 font-bold text-slate-700' : 'bg-slate-50 text-slate-400 font-medium';
 
@@ -1175,8 +1253,7 @@
             <td id="cell_${cellKey}" 
               onmousedown="handleCellMouseDown('${cellKey}')"
               onmouseover="handleCellMouseOver('${cellKey}')"
-              class="p-1 border border-slate-200 cursor-pointer transition-all ${cellBgClass} select-none h-6" 
-              title="${assigned ? (assigned.projId + ' - ' + assigned.taskName) : '點擊或拖曳塗繪 0.5 小時時數'}">
+              class="p-1 border border-slate-200 cursor-pointer transition-all ${cellBgClass} select-none h-6">
               ${cellContent}
             </td>
           `;
@@ -1198,9 +1275,7 @@
         
         let timetableSlotCount = 0;
         Object.values(state.timetableData).forEach(item => {
-          if (item && `${item.projId}_${item.taskName}` === key) {
-            timetableSlotCount++;
-          }
+          if (item && `${item.projId}_${item.taskName}` === key) timetableSlotCount++;
         });
 
         const timetableHours = timetableSlotCount * 0.5;
@@ -1216,8 +1291,8 @@
       if (nonTimetableHours.length === 0) {
         container.innerHTML = `
           <div class="text-xs text-slate-400 font-semibold flex items-center justify-between">
-            <span>📋 傳統卡片模式手動填寫的時數 (非特定時段)：無額外填寫</span>
-            <span class="text-[10px] text-slate-400">目前時數皆由課表塗鴉計算 (以 0.5 小時為單位)</span>
+            <span>📋 手動填寫額外時數：無</span>
+            <span class="text-[10px] text-slate-400">目前時數皆由課表塗鴉計算</span>
           </div>`;
       } else {
         let itemsHtml = nonTimetableHours.map(item => `
@@ -1229,8 +1304,7 @@
         container.innerHTML = `
           <div class="space-y-1.5">
             <div class="flex justify-between items-center text-xs font-bold text-slate-700">
-              <span>📋 傳統卡片模式填寫時數 (非特定時段)：</span>
-              <span class="text-[10px] text-indigo-600">已自動歸類併入總時數</span>
+              <span>📋 卡片手動填寫時數：</span>
             </div>
             <div class="flex flex-wrap gap-1.5 pt-1">${itemsHtml}</div>
           </div>`;
@@ -1243,9 +1317,7 @@
     }
 
     function handleCellMouseOver(cellKey) {
-      if (state.isMouseDown) {
-        paintCell(cellKey);
-      }
+      if (state.isMouseDown) paintCell(cellKey);
     }
 
     function paintCell(cellKey) {
@@ -1268,11 +1340,9 @@
           const colorSet = COLOR_MAPS[proj?.color] || COLOR_MAPS.slate;
           cellEl.className = `p-1 border border-slate-200 cursor-pointer transition-all ${colorSet.cellBg} font-bold select-none h-6`;
           cellEl.innerHTML = `<span class="text-[9px] truncate block px-0.5">${proj ? proj.name.substring(0, 3) : (assigned.projId || '')}</span>`;
-          cellEl.title = `${proj?.name || assigned.projId} - ${assigned.taskName}`;
         } else {
           cellEl.className = "p-1 border border-slate-200 cursor-pointer transition-all bg-white hover:bg-indigo-50 select-none h-6";
           cellEl.innerHTML = "";
-          cellEl.title = "點擊或拖曳塗繪 0.5 小時時數";
         }
       }
 
@@ -1281,7 +1351,6 @@
 
     function recalculateHoursFromTimetable() {
       const timetableHours = {};
-
       Object.values(state.timetableData).forEach(item => {
         if (item && item.projId && item.taskName) {
           const key = `${item.projId}_${item.taskName}`;
@@ -1297,9 +1366,7 @@
         proj.tasks.forEach(task => {
           const key = `${proj.id}_${task}`;
           const inputEl = document.getElementById(`input_${key}`);
-          if (inputEl) {
-            inputEl.value = state.hoursInput[key] !== undefined ? state.hoursInput[key] : '';
-          }
+          if (inputEl) inputEl.value = state.hoursInput[key] !== undefined ? state.hoursInput[key] : '';
         });
       });
 
@@ -1338,9 +1405,7 @@
         if (match.feedback) {
           feedbackCard.classList.remove('hidden');
           document.getElementById('teacher-feedback-text').textContent = `"${match.feedback}"`;
-        } else {
-          feedbackCard.classList.add('hidden');
-        }
+        } else feedbackCard.classList.add('hidden');
       } else {
         statusCard.className = "bg-slate-100 text-slate-600 border border-slate-200 p-3 rounded-lg text-xs font-semibold text-center";
         statusCard.textContent = "📭 本週尚未建立呈報紀錄";
@@ -1351,19 +1416,13 @@
     function studentAddProjectTask(projectId) {
       const input = document.getElementById(`inline-input-${projectId}`);
       const text = input ? input.value : "";
-      if (!text || !text.trim()) {
-        showToast("請輸入子項目名稱！", "warning");
-        return;
-      }
+      if (!text || !text.trim()) { showToast("請輸入子項目名稱！", "warning"); return; }
 
       const trimmed = text.trim();
       const target = state.projects.find(p => p.id === projectId);
       if (!target) return;
 
-      if (target.tasks.includes(trimmed)) {
-        showToast("該子項目已存在！", "warning");
-        return;
-      }
+      if (target.tasks.includes(trimmed)) { showToast("該子項目已存在！", "warning"); return; }
 
       target.tasks.push(trimmed);
       isStudentPanelRendered = false;
@@ -1375,11 +1434,8 @@
     function updateHourInput(projectId, taskName, val) {
       const num = val === '' ? '' : Math.max(0, parseFloat(val) || 0);
       const key = `${projectId}_${taskName}`;
-      if (num === '' || num === 0) {
-        delete state.hoursInput[key];
-      } else {
-        state.hoursInput[key] = num;
-      }
+      if (num === '' || num === 0) delete state.hoursInput[key];
+      else state.hoursInput[key] = num;
       updateTotalHoursDisplay();
       if (state.reportMode === 'timetable') renderTimetableCardSummary();
     }
@@ -1388,11 +1444,8 @@
       const key = `${projectId}_${taskName}`;
       const currentVal = state.hoursInput[key] || 0;
       const newVal = Math.max(0, currentVal + delta);
-      if (newVal > 0) {
-        state.hoursInput[key] = newVal;
-      } else {
-        delete state.hoursInput[key];
-      }
+      if (newVal > 0) state.hoursInput[key] = newVal;
+      else delete state.hoursInput[key];
       
       const inputEl = document.getElementById(`input_${key}`);
       if (inputEl) inputEl.value = state.hoursInput[key] !== undefined ? state.hoursInput[key] : '';
@@ -1403,10 +1456,7 @@
 
     function submitHours() {
       const currentTotal = calculateCurrentTotal();
-      if (currentTotal === 0) {
-        showToast("總時數不能為 0 小時！", "warning");
-        return;
-      }
+      if (currentTotal === 0) { showToast("總時數不能為 0 小時！", "warning"); return; }
 
       const sanitized = {};
       Object.entries(state.hoursInput).forEach(([k, v]) => {
@@ -1419,7 +1469,6 @@
         !ch.taskName.startsWith('__TIMETABLE__:')
       ));
 
-      // 將 0.5h 課表格子進行「連續時間段合併」，打包成單一 JSON 寫入 Google Sheet
       const timetableRanges = [];
       for (let day = 0; day < 7; day++) {
         let currentBlock = null;
@@ -1430,19 +1479,10 @@
               currentBlock.endSlot = slot + 1;
             } else {
               if (currentBlock) timetableRanges.push(currentBlock);
-              currentBlock = {
-                dayIdx: day,
-                startSlot: slot,
-                endSlot: slot + 1,
-                projId: item.projId,
-                taskName: item.taskName
-              };
+              currentBlock = { dayIdx: day, startSlot: slot, endSlot: slot + 1, projId: item.projId, taskName: item.taskName };
             }
           } else {
-            if (currentBlock) {
-              timetableRanges.push(currentBlock);
-              currentBlock = null;
-            }
+            if (currentBlock) { timetableRanges.push(currentBlock); currentBlock = null; }
           }
         }
         if (currentBlock) timetableRanges.push(currentBlock);
@@ -1454,11 +1494,10 @@
           const startStr = slotToTimeString(r.startSlot).startStr;
           const endStr = slotToTimeString(r.endSlot - 1).endStr;
           const proj = state.projects.find(p => p.id === r.projId);
-          const projName = proj ? proj.name : r.projId;
           return {
             day: dayName,
             time: `${startStr}~${endStr}`,
-            proj: projName,
+            proj: proj ? proj.name : r.projId,
             task: r.taskName,
             tag: `${r.projId}_${r.taskName}`
           };
@@ -1489,7 +1528,7 @@
       else state.submissions.push(localSub);
 
       updateSubmissionStatusUI();
-      showToast("🎉 時數與課表 0.5h 時間格已成功送出並儲存至 Google Sheet！");
+      showToast("🎉 時數與課表已成功送出！");
 
       if (state.dbConnected) {
         sendGasPost({
@@ -1542,20 +1581,77 @@
 
     function renderTeacherReviewPanel() {
       const listContainer = document.getElementById('submissions-list');
+      const deptFilter = document.getElementById('teacher-dept-filter')?.value || 'ALL';
       listContainer.innerHTML = '';
 
-      const weeklySubs = state.submissions
-        .filter(s => s.week === state.selectedWeek)
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      const allStudents = state.users.filter(u => u.role === 'student');
+      const targetStudents = deptFilter === 'ALL' ? allStudents : allStudents.filter(u => u.dept === deptFilter);
+
+      let weeklySubs = state.submissions.filter(s => s.week === state.selectedWeek);
+
+      if (deptFilter !== 'ALL') {
+        const validStudentUids = targetStudents.map(s => s.uid);
+        weeklySubs = weeklySubs.filter(s => validStudentUids.includes(s.userId));
+      }
+
+      weeklySubs.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+
+      let totalLabHours = 0;
+      let activeProjectsSet = new Set();
+
+      weeklySubs.forEach(s => {
+        totalLabHours += (parseFloat(s.totalHours) || 0);
+        Object.keys(s.hours || {}).forEach(k => {
+          const proj = state.projects.find(p => k.startsWith(p.id + '_'));
+          if (proj) activeProjectsSet.add(proj.id);
+        });
+      });
+
+      const submittedCount = weeklySubs.length;
+      const totalStudentCount = targetStudents.length;
+      const avgHours = submittedCount > 0 ? (totalLabHours / submittedCount).toFixed(1) : 0;
+
+      document.getElementById('kpi-total-hours').textContent = totalLabHours;
+      document.getElementById('kpi-submitted-count').textContent = submittedCount;
+      document.getElementById('kpi-total-students').textContent = `/ ${totalStudentCount} 人`;
+      document.getElementById('kpi-avg-hours').textContent = avgHours;
+      document.getElementById('kpi-active-projects').textContent = activeProjectsSet.size;
+
+      const submittedUids = weeklySubs.map(s => s.userId);
+      const unsubmittedStudents = targetStudents.filter(u => !submittedUids.includes(u.uid));
+      const unsubmittedTagsContainer = document.getElementById('unsubmitted-list-tags');
+      
+      if (unsubmittedStudents.length === 0) {
+        unsubmittedTagsContainer.innerHTML = `<span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">🎉太棒了！本區全員皆已繳交</span>`;
+      } else {
+        unsubmittedTagsContainer.innerHTML = unsubmittedStudents.map(u => 
+          `<span class="text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-md flex items-center gap-1">
+            👤 ${u.name} <span class="text-[9px] opacity-75">(${u.dept})</span>
+          </span>`
+        ).join('');
+      }
 
       if (weeklySubs.length === 0) {
-        listContainer.innerHTML = `<div class="text-center py-12 text-slate-400 border border-dashed border-slate-200 rounded-xl"><p class="text-sm font-semibold">本週尚無學生送出申報</p></div>`;
+        listContainer.innerHTML = `
+          <div class="text-center py-12 text-slate-400 border border-dashed border-slate-200 rounded-xl">
+            <p class="text-sm font-semibold">本週尚無學生送出申報</p>
+          </div>`;
         return;
       }
 
       weeklySubs.forEach(sub => {
         const item = document.createElement('div');
-        item.className = "border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4";
+        item.className = "border border-slate-200 rounded-xl p-4 bg-white hover:border-indigo-300 transition-all shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4";
+
+        const userObj = state.users.find(u => u.uid === sub.userId);
+        const deptTag = userObj ? userObj.dept : '';
+
+        let workloadBadge = '';
+        if (sub.totalHours >= 40) {
+          workloadBadge = `<span class="text-[10px] bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold">🔥 高強度研究 (${sub.totalHours}h)</span>`;
+        } else if (sub.totalHours < 10) {
+          workloadBadge = `<span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">🌱 低工時狀態 (${sub.totalHours}h)</span>`;
+        }
 
         let tasksBadgeHtml = '';
         Object.entries(sub.hours || {}).forEach(([key, v]) => {
@@ -1567,21 +1663,120 @@
         });
 
         item.innerHTML = `
-          <div>
-            <div class="flex items-center gap-3">
+          <div class="space-y-2 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
               <span class="font-bold text-sm text-slate-800">${sub.userName}</span>
+              ${deptTag ? `<span class="text-[10px] bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.5 rounded font-semibold">${deptTag}</span>` : ''}
               <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">📬 已送達</span>
+              ${workloadBadge}
             </div>
-            <div class="mt-2.5 flex flex-wrap gap-1.5">${tasksBadgeHtml}</div>
-            ${sub.feedback ? `<p class="text-xs italic text-indigo-700 bg-indigo-50 mt-2 p-1.5 rounded"><strong>反饋：</strong> ${sub.feedback}</p>` : ''}
+            <div class="flex flex-wrap gap-1.5 pt-1">${tasksBadgeHtml}</div>
+            ${sub.feedback ? `<p class="text-xs italic text-indigo-800 bg-indigo-50 border border-indigo-100 p-2 rounded-lg"><strong>老師回饋：</strong> ${sub.feedback}</p>` : ''}
           </div>
-          <div class="flex items-center gap-3 shrink-0">
-            <span class="text-base font-black text-slate-700">共 ${sub.totalHours} 小時</span>
-            <button onclick="openFeedbackModal('${sub.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm">給予反饋</button>
+
+          <div class="flex items-center gap-3 shrink-0 self-end md:self-center border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
+            <div class="text-right">
+              <span class="text-xs text-slate-400 block font-semibold">本週合計</span>
+              <span class="text-lg font-black text-slate-800">${sub.totalHours} 小時</span>
+            </div>
+            
+            <button onclick="openStudentDetailModal('${sub.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2 rounded-lg transition border border-slate-200 flex items-center gap-1">
+              🔍 檢視課表
+            </button>
+            <button onclick="openFeedbackModal('${sub.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm transition">
+              💬 給予回饋
+            </button>
           </div>
         `;
         listContainer.appendChild(item);
       });
+    }
+
+    function openStudentDetailModal(submissionId) {
+      const sub = state.submissions.find(s => s.id === submissionId);
+      if (!sub) return;
+
+      document.getElementById('modal-student-name').textContent = `👤 ${sub.userName} 的週申報詳細數據`;
+      document.getElementById('modal-student-sub').textContent = `週別：${sub.week} (${getWeekDateRange(sub.week)}) • 總申報時數：${sub.totalHours} 小時`;
+
+      const breakdownContainer = document.getElementById('modal-student-breakdown');
+      breakdownContainer.innerHTML = '';
+      Object.entries(sub.hours || {}).forEach(([key, v]) => {
+        const proj = state.projects.find(p => key.startsWith(p.id + '_'));
+        const projName = proj ? proj.name : key;
+        const taskName = proj ? key.substring(proj.id.length + 1) : '';
+        const colorSet = COLOR_MAPS[proj?.color] || COLOR_MAPS.slate;
+        breakdownContainer.innerHTML += `<span class="text-xs font-bold px-2.5 py-1 rounded border ${colorSet.border} ${colorSet.bg} ${colorSet.text}">${projName} - ${taskName}: ${v}h</span>`;
+      });
+
+      const studentTimetable = {};
+      const timetableItems = (sub.customHours || []).filter(ch => ch.taskName && ch.taskName.startsWith('__TIMETABLE_JSON__:'));
+
+      timetableItems.forEach(item => {
+        try {
+          const ranges = JSON.parse(item.taskName.replace('__TIMETABLE_JSON__:', ''));
+          ranges.forEach(r => {
+            const dayIdx = DAY_NAMES.indexOf(r.day);
+            if (dayIdx >= 0) {
+              const [sH, sM] = r.time.split('~')[0].split(':').map(Number);
+              const [eH, eM] = r.time.split('~')[1].split(':').map(Number);
+              const startSlot = sH * 2 + (sM >= 30 ? 1 : 0);
+              let endSlot = eH * 2 + (eM >= 30 ? 1 : 0);
+              if (endSlot <= startSlot) endSlot = startSlot + 1;
+
+              let matchedProjId = null, matchedTaskName = null;
+              if (r.tag) {
+                for (const proj of state.projects) {
+                  if (r.tag.startsWith(proj.id + '_')) {
+                    matchedProjId = proj.id;
+                    matchedTaskName = r.tag.substring(proj.id.length + 1);
+                    break;
+                  }
+                }
+              }
+
+              for (let slot = startSlot; slot < endSlot; slot++) {
+                studentTimetable[`${dayIdx}_${slot}`] = { projId: matchedProjId || r.proj, taskName: matchedTaskName || r.task };
+              }
+            }
+          });
+        } catch (e) { console.error("解析學生課表失敗", e); }
+      });
+
+      const gridBody = document.getElementById('modal-timetable-grid-body');
+      gridBody.innerHTML = '';
+
+      for (let slot = 0; slot < 48; slot++) {
+        const tr = document.createElement('tr');
+        const { label } = slotToTimeString(slot);
+        const isHourBoundary = slot % 2 === 0;
+        const labelBg = isHourBoundary ? 'bg-slate-100 font-bold text-slate-700' : 'bg-slate-50 text-slate-400 font-medium';
+
+        let rowHtml = `<td class="p-1 border border-slate-200 ${labelBg} font-mono text-[11px]">${label}</td>`;
+
+        for (let day = 0; day < 7; day++) {
+          const assigned = studentTimetable[`${day}_${slot}`];
+          let cellBgClass = "bg-white";
+          let cellContent = "";
+
+          if (assigned) {
+            const proj = state.projects.find(p => p.id === assigned.projId);
+            const colorSet = COLOR_MAPS[proj?.color] || COLOR_MAPS.slate;
+            cellBgClass = `${colorSet.cellBg} font-bold`;
+            cellContent = `<span class="text-[9px] truncate block px-0.5">${proj ? proj.name.substring(0, 3) : (assigned.projId || '')}</span>`;
+          }
+
+          rowHtml += `<td class="p-1 border border-slate-200 ${cellBgClass} select-none h-6">${cellContent}</td>`;
+        }
+        tr.innerHTML = rowHtml;
+        gridBody.appendChild(tr);
+      }
+
+      document.getElementById('student-detail-modal').classList.remove('hidden');
+    }
+
+    function closeStudentDetailModal() {
+      document.getElementById('student-detail-modal').classList.add('hidden');
     }
 
     function openFeedbackModal(submissionId) {
@@ -1663,7 +1858,7 @@
       const content = document.getElementById('project-edit-modal-content');
       const proj = state.editingProject;
       if (!proj) return;
-      let html = `<div class="space-y-3"><input type="text" value="${proj.name}" onchange="state.editingProject.name=this.value" class="w-full border rounded p-2 text-xs" />`;
+      let html = `<div class="space-y-3"><input type="text" value="${proj.name}" onchange="state.editingProject.name=this.value" class="w-full border rounded p-2 text-xs font-bold" />`;
       proj.tasks.forEach((t, i) => {
         html += `<div class="flex gap-2"><input type="text" value="${t}" onchange="state.editingProject.tasks[${i}]=this.value" class="flex-1 border rounded p-1 text-xs" /></div>`;
       });
@@ -1689,10 +1884,7 @@
         tr.className = "hover:bg-slate-50";
         tr.innerHTML = `
           <td class="p-3">
-            <input type="text" value="${u.uid || ''}" 
-              onchange="updateUserField(${index}, 'uid', this.value)" 
-              placeholder="輸入成員ID"
-              class="w-32 text-xs border border-slate-300 rounded p-1 font-mono focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-white" />
+            <input type="text" value="${u.uid || ''}" onchange="updateUserField(${index}, 'uid', this.value)" placeholder="輸入成員ID" class="w-32 text-xs border border-slate-300 rounded p-1 font-mono focus:outline-none bg-white" />
           </td>
           <td class="p-3">
             <select onchange="updateUserField(${index}, 'dept', this.value)" class="text-xs border border-slate-300 rounded p-1 focus:outline-none bg-white">
@@ -1702,10 +1894,7 @@
             </select>
           </td>
           <td class="p-3">
-            <input type="text" value="${u.name || ''}" 
-              onchange="updateUserField(${index}, 'name', this.value)" 
-              placeholder="姓名"
-              class="text-xs border border-slate-300 rounded p-1 w-32 focus:outline-none bg-white" />
+            <input type="text" value="${u.name || ''}" onchange="updateUserField(${index}, 'name', this.value)" placeholder="姓名" class="text-xs border border-slate-300 rounded p-1 w-32 focus:outline-none bg-white" />
           </td>
           <td class="p-3">
             <select onchange="updateUserField(${index}, 'role', this.value)" class="text-xs border border-slate-300 rounded p-1 focus:outline-none bg-white">
@@ -1714,10 +1903,7 @@
             </select>
           </td>
           <td class="p-3">
-            <input type="text" value="${u.password || ''}" 
-              onchange="updateUserField(${index}, 'password', this.value)" 
-              placeholder="密碼"
-              class="text-xs border border-slate-300 rounded p-1 w-28 focus:outline-none bg-white" />
+            <input type="text" value="${u.password || ''}" onchange="updateUserField(${index}, 'password', this.value)" placeholder="密碼" class="text-xs border border-slate-300 rounded p-1 w-28 focus:outline-none bg-white" />
           </td>
           <td class="p-3 text-center">
             <button onclick="openConfirmDeleteUserModal(${index})" class="text-rose-600 hover:text-rose-800 text-xs font-bold px-2 py-1 rounded bg-rose-50 border border-rose-200 transition">刪除</button>
@@ -1728,28 +1914,20 @@
     }
 
     function updateUserField(index, field, value) {
-      if (state.users[index]) {
-        state.users[index][field] = value.trim();
-      }
+      if (state.users[index]) state.users[index][field] = value.trim();
     }
 
     function addNewUserRow() {
       const newId = `user${Date.now().toString().slice(-4)}`;
-      state.users.push({
-        uid: newId,
-        name: "新成員",
-        role: "student",
-        password: "123",
-        dept: "醫工所"
-      });
+      state.users.push({ uid: newId, name: "新成員", role: "student", password: "123", dept: "醫工所" });
       renderTeacherUsersPanel();
-      showToast("已新增成員列，請編輯成員 ID 與姓名後點擊「儲存並同步」！", "warning");
+      showToast("已新增成員列，請編輯後點擊「儲存與同步」！", "warning");
     }
 
     function openConfirmDeleteUserModal(index) {
       state.deletingUserIndex = index;
       const u = state.users[index];
-      document.getElementById('confirm-delete-text').textContent = `您確定要將成員「${u ? u.name : ''} (${u ? u.uid : ''})」從名單中移除嗎？`;
+      document.getElementById('confirm-delete-text').textContent = `您確定要將成員「${u ? u.name : ''} (${u ? u.uid : ''})」移除嗎？`;
       document.getElementById('confirm-delete-modal').classList.remove('hidden');
     }
 
@@ -1769,15 +1947,8 @@
 
     function saveUsersToCloud() {
       const uids = state.users.map(u => (u.uid || '').trim());
-      if (uids.some(id => !id)) {
-        showToast("錯誤：成員 ID 不能為空白！", "error");
-        return;
-      }
-      const hasDuplicate = uids.some((id, idx) => uids.indexOf(id) !== idx);
-      if (hasDuplicate) {
-        showToast("錯誤：成員 ID 不能重複！請確保每個成員都有唯一的 ID", "error");
-        return;
-      }
+      if (uids.some(id => !id)) { showToast("錯誤：成員 ID 不能為空白！", "error"); return; }
+      if (uids.some((id, idx) => uids.indexOf(id) !== idx)) { showToast("錯誤：成員 ID 不能重複！", "error"); return; }
 
       showToast("儲存並同步成員名單中...");
 
@@ -1793,52 +1964,282 @@
       }
     }
 
+    /* =========================================================
+       💡 升級版：Chart.js 科研投入圖表渲染引擎
+    ========================================================= */
     function renderTeacherAnalyticsPanel() {
-      const memberList = document.getElementById('member-analytics-list');
-      const projectList = document.getElementById('project-analytics-list');
-      memberList.innerHTML = '';
-      projectList.innerHTML = '';
+      const rangeFilter = document.getElementById('analytics-range-filter')?.value || 'WEEK';
+      const deptFilter = document.getElementById('analytics-dept-filter')?.value || 'ALL';
 
-      const students = state.users.filter(u => u.role === 'student');
-      students.forEach(user => {
-        const sub = state.submissions.find(s => s.userId === user.uid && s.week === state.selectedWeek);
-        const hrs = sub ? sub.totalHours : 0;
-        memberList.innerHTML += `
-          <div class="space-y-1">
-            <div class="flex justify-between text-xs font-bold">
-              <span>${user.name}</span>
-              <span>${hrs} 小時</span>
-            </div>
-            <div class="bg-slate-200 h-2 rounded-full overflow-hidden">
-              <div class="bg-emerald-500 h-full transition-all duration-300" style="width: ${Math.min(100, (hrs/40)*100)}%"></div>
-            </div>
-          </div>`;
-      });
+      // 1. 篩選學生與申報數據
+      const allStudents = state.users.filter(u => u.role === 'student');
+      const targetStudents = deptFilter === 'ALL' ? allStudents : allStudents.filter(u => u.dept === deptFilter);
+      const targetStudentUids = targetStudents.map(s => s.uid);
 
-      const projTotals = {};
-      state.projects.forEach(p => projTotals[p.id] = 0);
-      state.submissions.filter(s => s.week === state.selectedWeek).forEach(sub => {
-        Object.entries(sub.hours || {}).forEach(([k, v]) => {
-          const matchedProj = state.projects.find(p => k.startsWith(p.id + '_'));
-          if (matchedProj && projTotals[matchedProj.id] !== undefined) {
-            projTotals[matchedProj.id] += (parseFloat(v) || 0);
+      let filteredSubs = state.submissions;
+      if (rangeFilter === 'WEEK') {
+        filteredSubs = filteredSubs.filter(s => s.week === state.selectedWeek);
+      }
+      if (deptFilter !== 'ALL') {
+        filteredSubs = filteredSubs.filter(s => targetStudentUids.includes(s.userId));
+      }
+
+      // 2. 統計各計畫案投入時數與佔比
+      const projectHoursMap = {};
+      state.projects.forEach(p => projectHoursMap[p.id] = 0);
+
+      let grandTotalHours = 0;
+      filteredSubs.forEach(sub => {
+        Object.entries(sub.hours || {}).forEach(([key, val]) => {
+          const hrs = parseFloat(val) || 0;
+          grandTotalHours += hrs;
+          const proj = state.projects.find(p => key.startsWith(p.id + '_'));
+          if (proj) {
+            projectHoursMap[proj.id] = (projectHoursMap[proj.id] || 0) + hrs;
           }
         });
       });
 
-      const maxProjHrs = Math.max(...Object.values(projTotals), 1);
-      state.projects.forEach(proj => {
-        const hrs = projTotals[proj.id] || 0;
-        projectList.innerHTML += `
-          <div class="space-y-1">
-            <div class="flex justify-between text-xs font-bold">
-              <span>${proj.name}</span>
-              <span>${hrs} 小時</span>
-            </div>
-            <div class="bg-slate-200 h-2 rounded-full overflow-hidden">
-              <div class="bg-indigo-600 h-full transition-all duration-300" style="width: ${Math.min(100, (hrs/maxProjHrs)*100)}%"></div>
-            </div>
-          </div>`;
+      // 更新總時數標籤
+      const totalLabel = document.getElementById('chart-total-label');
+      if (totalLabel) totalLabel.textContent = `範圍總時數: ${grandTotalHours} 小時`;
+
+      // 3. 洞察指標 1: 最熱門計畫
+      let topProjId = null;
+      let maxProjHrs = -1;
+      Object.entries(projectHoursMap).forEach(([id, hrs]) => {
+        if (hrs > maxProjHrs) { maxProjHrs = hrs; topProjId = id; }
+      });
+      const topProjObj = state.projects.find(p => p.id === topProjId);
+      document.getElementById('insight-top-project').textContent = (topProjObj && maxProjHrs > 0) ? `${topProjObj.name} (${maxProjHrs}h)` : '無';
+
+      // 4. 統計各成員時數與洞察指標 2 & 3: 最高投入成員與人均
+      const studentHoursMap = {};
+      targetStudents.forEach(s => studentHoursMap[s.uid] = 0);
+      filteredSubs.forEach(sub => {
+        if (studentHoursMap[sub.userId] !== undefined) {
+          studentHoursMap[sub.userId] += (parseFloat(sub.totalHours) || 0);
+        }
+      });
+
+      let topStudentUid = null;
+      let maxStudentHrs = -1;
+      let activeStudentCount = 0;
+      let overworkCount = 0;
+      let lowworkCount = 0;
+
+      Object.entries(studentHoursMap).forEach(([uid, hrs]) => {
+        if (hrs > 0) activeStudentCount++;
+        if (hrs > maxStudentHrs) { maxStudentHrs = hrs; topStudentUid = uid; }
+        if (hrs >= 40) overworkCount++;
+        else if (hrs < 10) lowworkCount++;
+      });
+
+      const topStudentObj = state.users.find(u => u.uid === topStudentUid);
+      document.getElementById('insight-top-student').textContent = (topStudentObj && maxStudentHrs > 0) ? `${topStudentObj.name} (${maxStudentHrs}h)` : '無';
+
+      const avgHrs = targetStudents.length > 0 ? (grandTotalHours / targetStudents.length).toFixed(1) : 0;
+      document.getElementById('insight-avg-hours').textContent = `${avgHrs} 小時 / 人`;
+
+      const workloadStatusEl = document.getElementById('insight-workload-status');
+      if (overworkCount > 0) {
+        workloadStatusEl.innerHTML = `<span class="text-rose-600 font-bold">🔥 ${overworkCount} 人過度高負載 (≥40h)</span>`;
+      } else if (lowworkCount > 0) {
+        workloadStatusEl.innerHTML = `<span class="text-amber-600 font-bold">🌱 ${lowworkCount} 人投入偏低 (<10h)</span>`;
+      } else {
+        workloadStatusEl.innerHTML = `<span class="text-emerald-600 font-bold">✅ 團隊負荷勻稱健康</span>`;
+      }
+
+      // ================= 圖表 1：計畫投入環狀圖 (Doughnut Chart) =================
+      const pieLabels = [];
+      const pieData = [];
+      const pieColors = [];
+
+      state.projects.forEach(p => {
+        const hrs = projectHoursMap[p.id] || 0;
+        if (hrs > 0) {
+          pieLabels.push(p.name);
+          pieData.push(hrs);
+          const colorSet = COLOR_MAPS[p.color] || COLOR_MAPS.slate;
+          pieColors.push(colorSet.hex);
+        }
+      });
+
+      if (chartInstances.projectPie) chartInstances.projectPie.destroy();
+      const ctxProjectPie = document.getElementById('chart-project-pie').getContext('2d');
+      
+      chartInstances.projectPie = new Chart(ctxProjectPie, {
+        type: 'doughnut',
+        data: {
+          labels: pieLabels.length ? pieLabels : ['尚無時數數據'],
+          datasets: [{
+            data: pieData.length ? pieData : [1],
+            backgroundColor: pieColors.length ? pieColors : ['#e2e8f0'],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const val = context.raw || 0;
+                  const pct = grandTotalHours > 0 ? ((val / grandTotalHours) * 100).toFixed(1) : 0;
+                  return ` ${context.label}: ${val} 小時 (${pct}%)`;
+                }
+              }
+            }
+          },
+          cutout: '65%'
+        }
+      });
+
+      // ================= 圖表 2：科系/所別貢獻圓餅圖 (Dept Doughnut Chart) =================
+      const deptHoursMap = { "醫工所": 0, "人智所": 0 };
+      filteredSubs.forEach(sub => {
+        const u = state.users.find(user => user.uid === sub.userId);
+        if (u && deptHoursMap[u.dept] !== undefined) {
+          deptHoursMap[u.dept] += (parseFloat(sub.totalHours) || 0);
+        }
+      });
+
+      if (chartInstances.deptPie) chartInstances.deptPie.destroy();
+      const ctxDeptPie = document.getElementById('chart-dept-pie').getContext('2d');
+
+      chartInstances.deptPie = new Chart(ctxDeptPie, {
+        type: 'pie',
+        data: {
+          labels: ['醫工所', '人智所'],
+          datasets: [{
+            data: [deptHoursMap['醫工所'], deptHoursMap['人智所']],
+            backgroundColor: ['#6366f1', '#10b981'],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const val = context.raw || 0;
+                  const pct = grandTotalHours > 0 ? ((val / grandTotalHours) * 100).toFixed(1) : 0;
+                  return ` ${context.label}: ${val} 小時 (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // ================= 圖表 3：成員工時排行長條圖 (Bar Chart) =================
+      const memberNames = [];
+      const memberHours = [];
+      const memberColors = [];
+
+      targetStudents.forEach(s => {
+        const hrs = studentHoursMap[s.uid] || 0;
+        memberNames.push(`${s.name} (${s.dept.substring(0, 2)})`);
+        memberHours.push(hrs);
+        memberColors.push(hrs >= 40 ? '#ec4899' : hrs >= 20 ? '#6366f1' : '#94a3b8');
+      });
+
+      if (chartInstances.memberBar) chartInstances.memberBar.destroy();
+      const ctxMemberBar = document.getElementById('chart-member-bar').getContext('2d');
+
+      chartInstances.memberBar = new Chart(ctxMemberBar, {
+        type: 'bar',
+        data: {
+          labels: memberNames,
+          datasets: [{
+            label: '申報工時 (小時)',
+            data: memberHours,
+            backgroundColor: memberColors,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: 'y', // 橫向柱狀圖更加清晰
+          scales: {
+            x: { beginAtZero: true, grid: { color: '#f1f5f9' }, title: { display: true, text: '小時 (h)', font: { size: 10 } } },
+            y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+
+      // ================= 圖表 4：跨週歷史走勢折線圖 (Weekly Trend Line Chart) =================
+      // 取得最近 4 個週別的歷史資料
+      const allWeeks = Array.from(new Set(state.submissions.map(s => s.week))).sort().slice(-5);
+      if (!allWeeks.includes(state.selectedWeek)) allWeeks.push(state.selectedWeek);
+      allWeeks.sort();
+
+      const trendTotalHours = [];
+      const trendAvgHours = [];
+
+      allWeeks.forEach(w => {
+        let wSubs = state.submissions.filter(s => s.week === w);
+        if (deptFilter !== 'ALL') {
+          wSubs = wSubs.filter(s => targetStudentUids.includes(s.userId));
+        }
+        const sum = wSubs.reduce((acc, curr) => acc + (parseFloat(curr.totalHours) || 0), 0);
+        const avg = targetStudents.length > 0 ? (sum / targetStudents.length) : 0;
+        trendTotalHours.push(sum);
+        trendAvgHours.push(parseFloat(avg.toFixed(1)));
+      });
+
+      if (chartInstances.weeklyTrend) chartInstances.weeklyTrend.destroy();
+      const ctxWeeklyTrend = document.getElementById('chart-weekly-trend').getContext('2d');
+
+      chartInstances.weeklyTrend = new Chart(ctxWeeklyTrend, {
+        type: 'line',
+        data: {
+          labels: allWeeks,
+          datasets: [
+            {
+              label: '實驗室總工時 (h)',
+              data: trendTotalHours,
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99, 102, 241, 0.1)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 4,
+              pointBackgroundColor: '#4f46e5'
+            },
+            {
+              label: '人均工時 (h)',
+              data: trendAvgHours,
+              borderColor: '#10b981',
+              borderDash: [5, 5],
+              fill: false,
+              tension: 0.3,
+              pointRadius: 4,
+              pointBackgroundColor: '#059669'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+            x: { grid: { display: false } }
+          },
+          plugins: {
+            legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } }
+          }
+        }
       });
     }
 
@@ -1879,6 +2280,10 @@
     window.openFeedbackModal = openFeedbackModal;
     window.closeFeedbackModal = closeFeedbackModal;
     window.saveFeedback = saveFeedback;
+    window.openStudentDetailModal = openStudentDetailModal;
+    window.closeStudentDetailModal = closeStudentDetailModal;
+    window.renderTeacherReviewPanel = renderTeacherReviewPanel;
+    window.renderTeacherAnalyticsPanel = renderTeacherAnalyticsPanel;
     window.promptCreateProject = promptCreateProject;
     window.openProjectEditModal = openProjectEditModal;
     window.closeProjectEditModal = closeProjectEditModal;
