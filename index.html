@@ -381,7 +381,7 @@
             <p class="text-xs text-slate-400 mt-0.5">多維度分析計畫佔比、成員貢獻與跨週趨勢數據</p>
           </div>
 
-          <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+          <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
             <div class="flex items-center gap-1.5 shrink-0">
               <label class="text-xs font-bold text-slate-500">統計範疇：</label>
               <select id="analytics-range-filter" onchange="renderTeacherAnalyticsPanel()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white font-semibold focus:ring-1 focus:ring-indigo-500 focus:outline-none">
@@ -396,6 +396,13 @@
                 <option value="ALL">全部所別</option>
                 <option value="醫工所">醫工所</option>
                 <option value="人智所">人智所</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-1.5 shrink-0">
+              <label class="text-xs font-bold text-slate-500">計畫專案：</label>
+              <select id="analytics-project-filter" onchange="renderTeacherAnalyticsPanel()" class="text-xs border border-indigo-300 bg-indigo-50/50 rounded-lg px-2.5 py-1.5 font-bold text-indigo-900 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                <option value="ALL">💡 全部計畫 (總覽)</option>
               </select>
             </div>
           </div>
@@ -436,13 +443,51 @@
           </div>
         </div>
 
+        <!-- 🎯 特定計畫人員參與與子項目剖析面板 (點擊圖表或切換下拉選單時呈現) -->
+        <div id="project-detail-section" class="bg-white rounded-xl shadow-sm p-5 border border-indigo-200 space-y-4 hidden">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-3 gap-2">
+            <div>
+              <h3 id="project-detail-title" class="font-bold text-base text-indigo-900 flex items-center gap-2">
+                <span>🎯 特定計畫參與人員與子項目細節</span>
+              </h3>
+              <p id="project-detail-sub" class="text-xs text-slate-400 mt-0.5">可查看參與此計畫的所有學生及其完成的具體工作子項</p>
+            </div>
+            <span id="project-detail-total-badge" class="text-xs font-bold px-3 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100">
+              計畫總工時：0 小時
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 子項目工時分佈 -->
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+              <h4 class="text-xs font-bold text-slate-700 mb-3 flex items-center justify-between">
+                <span>📌 子項目工時投入分佈</span>
+              </h4>
+              <div id="project-task-breakdown-list" class="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+                <!-- 動態注入子項目分佈條 -->
+              </div>
+            </div>
+
+            <!-- 參與成員名單與貢獻細節卡片 -->
+            <div class="lg:col-span-2 bg-slate-50 rounded-xl p-4 border border-slate-200">
+              <h4 class="text-xs font-bold text-slate-700 mb-3 flex items-center justify-between">
+                <span>👥 參與該計畫之學生清單與任務細節</span>
+                <span id="project-participant-count" class="text-[11px] text-indigo-600 font-bold">共 0 人參與</span>
+              </h4>
+              <div id="project-participants-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[280px] overflow-y-auto pr-1">
+                <!-- 動態注入成員參與卡片 -->
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 圖表區 第一列：計畫投入環狀圖 & 所別投入圓餅圖 -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-5 border border-slate-200 flex flex-col justify-between">
             <div class="flex justify-between items-center mb-4">
               <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-                各研究計畫工時投入占比 (Doughnut Chart)
+                各研究計畫工時投入占比 (可點擊區塊連動鑽取)
               </h3>
               <span id="chart-total-label" class="text-xs text-indigo-600 bg-indigo-50 font-bold px-2.5 py-1 rounded-lg">總計: 0 小時</span>
             </div>
@@ -467,7 +512,7 @@
         <!-- 圖表區 第二列：成員個人工時排行 & 近四周歷史走勢 -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-200">
-            <h3 class="font-bold text-sm text-slate-800 mb-4 flex items-center gap-2">
+            <h3 id="member-bar-chart-title" class="font-bold text-sm text-slate-800 mb-4 flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-amber-500"></span>
               學生個人研究投入時間與排行 (Bar Chart)
             </h3>
@@ -1647,10 +1692,8 @@
         const deptTag = userObj ? userObj.dept : '';
 
         let workloadBadge = '';
-        if (sub.totalHours >= 40) {
-          workloadBadge = `<span class="text-[10px] bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold">🔥 高強度研究 (${sub.totalHours}h)</span>`;
-        } else if (sub.totalHours < 10) {
-          workloadBadge = `<span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">🌱 低工時狀態 (${sub.totalHours}h)</span>`;
+        if (sub.totalHours < 10) {
+          workloadBadge = `<span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold">🌱 投入偏低 (${sub.totalHours}h)</span>`;
         }
 
         let tasksBadgeHtml = '';
@@ -1965,11 +2008,23 @@
     }
 
     /* =========================================================
-       💡 升級版：Chart.js 科研投入圖表渲染引擎
+       💡 升級版：Chart.js 科研投入圖表與計畫鑽取引擎
     ========================================================= */
     function renderTeacherAnalyticsPanel() {
       const rangeFilter = document.getElementById('analytics-range-filter')?.value || 'WEEK';
       const deptFilter = document.getElementById('analytics-dept-filter')?.value || 'ALL';
+      const projectFilterSelect = document.getElementById('analytics-project-filter');
+      const selectedProjId = projectFilterSelect?.value || 'ALL';
+
+      // 0. 動態填入「計畫專案篩選下拉選單」選項 (若尚未初始化)
+      if (projectFilterSelect && projectFilterSelect.options.length <= 1) {
+        state.projects.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = `📂 ${p.name}`;
+          projectFilterSelect.appendChild(opt);
+        });
+      }
 
       // 1. 篩選學生與申報數據
       const allStudents = state.users.filter(u => u.role === 'student');
@@ -2015,24 +2070,42 @@
 
       // 4. 統計各成員時數與洞察指標 2 & 3: 最高投入成員與人均
       const studentHoursMap = {};
-      targetStudents.forEach(s => studentHoursMap[s.uid] = 0);
+      const studentProjectSpecificHours = {}; // 特定的專案投入小時
+      const studentProjectTasks = {}; // 特定專案的子任務
+
+      targetStudents.forEach(s => {
+        studentHoursMap[s.uid] = 0;
+        studentProjectSpecificHours[s.uid] = 0;
+        studentProjectTasks[s.uid] = {};
+      });
+
       filteredSubs.forEach(sub => {
         if (studentHoursMap[sub.userId] !== undefined) {
           studentHoursMap[sub.userId] += (parseFloat(sub.totalHours) || 0);
+
+          Object.entries(sub.hours || {}).forEach(([key, val]) => {
+            const hrs = parseFloat(val) || 0;
+            if (hrs <= 0) return;
+            const proj = state.projects.find(p => key.startsWith(p.id + '_'));
+            if (proj) {
+              if (selectedProjId === 'ALL' || proj.id === selectedProjId) {
+                studentProjectSpecificHours[sub.userId] = (studentProjectSpecificHours[sub.userId] || 0) + hrs;
+                const taskName = key.substring(proj.id.length + 1);
+                if (!studentProjectTasks[sub.userId][taskName]) studentProjectTasks[sub.userId][taskName] = 0;
+                studentProjectTasks[sub.userId][taskName] += hrs;
+              }
+            }
+          });
         }
       });
 
       let topStudentUid = null;
       let maxStudentHrs = -1;
-      let activeStudentCount = 0;
-      let overworkCount = 0;
       let lowworkCount = 0;
 
       Object.entries(studentHoursMap).forEach(([uid, hrs]) => {
-        if (hrs > 0) activeStudentCount++;
         if (hrs > maxStudentHrs) { maxStudentHrs = hrs; topStudentUid = uid; }
-        if (hrs >= 40) overworkCount++;
-        else if (hrs < 10) lowworkCount++;
+        if (hrs < 10) lowworkCount++;
       });
 
       const topStudentObj = state.users.find(u => u.uid === topStudentUid);
@@ -2042,24 +2115,105 @@
       document.getElementById('insight-avg-hours').textContent = `${avgHrs} 小時 / 人`;
 
       const workloadStatusEl = document.getElementById('insight-workload-status');
-      if (overworkCount > 0) {
-        workloadStatusEl.innerHTML = `<span class="text-rose-600 font-bold">🔥 ${overworkCount} 人過度高負載 (≥40h)</span>`;
-      } else if (lowworkCount > 0) {
+      if (lowworkCount > 0) {
         workloadStatusEl.innerHTML = `<span class="text-amber-600 font-bold">🌱 ${lowworkCount} 人投入偏低 (<10h)</span>`;
       } else {
-        workloadStatusEl.innerHTML = `<span class="text-emerald-600 font-bold">✅ 團隊負荷勻稱健康</span>`;
+        workloadStatusEl.innerHTML = `<span class="text-emerald-600 font-bold">✅ 團隊投入狀況良好</span>`;
+      }
+
+      // 5. 特定計畫鑽取剖析卡片 (Project Drill-down Section) 渲染邏輯
+      const detailSection = document.getElementById('project-detail-section');
+      if (selectedProjId !== 'ALL') {
+        const activeProj = state.projects.find(p => p.id === selectedProjId);
+        detailSection.classList.remove('hidden');
+        document.getElementById('project-detail-title').innerHTML = `🎯 「${activeProj?.name}」參與人員與工作子項剖析`;
+        
+        const projTotalHrs = projectHoursMap[selectedProjId] || 0;
+        document.getElementById('project-detail-total-badge').textContent = `計畫總工時：${projTotalHrs} 小時`;
+
+        // A. 計算該計畫內部各子項目的小時數分佈
+        const taskTotals = {};
+        filteredSubs.forEach(sub => {
+          Object.entries(sub.hours || {}).forEach(([key, val]) => {
+            if (key.startsWith(selectedProjId + '_')) {
+              const taskName = key.substring(selectedProjId.length + 1);
+              taskTotals[taskName] = (taskTotals[taskName] || 0) + (parseFloat(val) || 0);
+            }
+          });
+        });
+
+        const taskBreakdownContainer = document.getElementById('project-task-breakdown-list');
+        taskBreakdownContainer.innerHTML = '';
+
+        if (Object.keys(taskTotals).length === 0) {
+          taskBreakdownContainer.innerHTML = `<p class="text-xs text-slate-400">目前尚無此計畫之子項目申報數據</p>`;
+        } else {
+          Object.entries(taskTotals).sort((a,b) => b[1] - a[1]).forEach(([taskName, hrs]) => {
+            const pct = projTotalHrs > 0 ? ((hrs / projTotalHrs) * 100).toFixed(1) : 0;
+            taskBreakdownContainer.innerHTML += `
+              <div class="space-y-1">
+                <div class="flex justify-between text-xs font-semibold text-slate-700">
+                  <span class="truncate max-w-[160px]">${taskName}</span>
+                  <span class="font-mono">${hrs}h (${pct}%)</span>
+                </div>
+                <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                  <div class="bg-indigo-600 h-full transition-all duration-300" style="width: ${pct}%"></div>
+                </div>
+              </div>`;
+          });
+        }
+
+        // B. 渲染參與該計畫的成員名單與卡片
+        const participantsContainer = document.getElementById('project-participants-list');
+        participantsContainer.innerHTML = '';
+        
+        let participantCount = 0;
+        targetStudents.forEach(s => {
+          const pHrs = studentProjectSpecificHours[s.uid] || 0;
+          if (pHrs > 0) {
+            participantCount++;
+            const totalH = studentHoursMap[s.uid] || 1;
+            const projSharePct = ((pHrs / totalH) * 100).toFixed(0);
+            
+            let tasksTagsHtml = '';
+            Object.entries(studentProjectTasks[s.uid] || {}).forEach(([tName, tHrs]) => {
+              tasksTagsHtml += `<span class="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-100 px-1.5 py-0.5 rounded font-medium">${tName}: ${tHrs}h</span> `;
+            });
+
+            participantsContainer.innerHTML += `
+              <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm space-y-2">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-1.5">
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-bold text-xs text-slate-800">${s.name}</span>
+                    <span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">${s.dept}</span>
+                  </div>
+                  <span class="text-xs font-black text-indigo-600">${pHrs} 小時 <span class="text-[10px] text-slate-400 font-normal">(${projSharePct}%)</span></span>
+                </div>
+                <div class="flex flex-wrap gap-1 pt-0.5">${tasksTagsHtml}</div>
+              </div>`;
+          }
+        });
+
+        document.getElementById('project-participant-count').textContent = `共 ${participantCount} 人參與`;
+        if (participantCount === 0) {
+          participantsContainer.innerHTML = `<div class="col-span-2 text-xs text-slate-400 p-4 text-center">此計畫在本選取範圍內無學生投入</div>`;
+        }
+      } else {
+        detailSection.classList.add('hidden');
       }
 
       // ================= 圖表 1：計畫投入環狀圖 (Doughnut Chart) =================
       const pieLabels = [];
       const pieData = [];
       const pieColors = [];
+      const pieProjIds = [];
 
       state.projects.forEach(p => {
         const hrs = projectHoursMap[p.id] || 0;
         if (hrs > 0) {
           pieLabels.push(p.name);
           pieData.push(hrs);
+          pieProjIds.push(p.id);
           const colorSet = COLOR_MAPS[p.color] || COLOR_MAPS.slate;
           pieColors.push(colorSet.hex);
         }
@@ -2082,6 +2236,17 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          onClick: (evt, activeElements) => {
+            if (activeElements.length > 0) {
+              const index = activeElements[0].index;
+              const clickedProjId = pieProjIds[index];
+              if (clickedProjId && projectFilterSelect) {
+                projectFilterSelect.value = clickedProjId;
+                renderTeacherAnalyticsPanel();
+                showToast(`已鎖定計畫：「${pieLabels[index]}」成員剖析`);
+              }
+            }
+          },
           plugins: {
             legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } },
             tooltip: {
@@ -2089,7 +2254,7 @@
                 label: function(context) {
                   const val = context.raw || 0;
                   const pct = grandTotalHours > 0 ? ((val / grandTotalHours) * 100).toFixed(1) : 0;
-                  return ` ${context.label}: ${val} 小時 (${pct}%)`;
+                  return ` ${context.label}: ${val} 小時 (${pct}%) (點擊可切換剖析)`;
                 }
               }
             }
@@ -2140,15 +2305,25 @@
       });
 
       // ================= 圖表 3：成員工時排行長條圖 (Bar Chart) =================
+      const memberBarTitleEl = document.getElementById('member-bar-chart-title');
+      if (memberBarTitleEl) {
+        if (selectedProjId !== 'ALL') {
+          const projObj = state.projects.find(p => p.id === selectedProjId);
+          memberBarTitleEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-indigo-500"></span>成員於「${projObj?.name}」之投入工時排行 (Bar Chart)`;
+        } else {
+          memberBarTitleEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span>學生個人研究總投入時間與排行 (Bar Chart)`;
+        }
+      }
+
       const memberNames = [];
       const memberHours = [];
       const memberColors = [];
 
       targetStudents.forEach(s => {
-        const hrs = studentHoursMap[s.uid] || 0;
+        const hrs = selectedProjId === 'ALL' ? (studentHoursMap[s.uid] || 0) : (studentProjectSpecificHours[s.uid] || 0);
         memberNames.push(`${s.name} (${s.dept.substring(0, 2)})`);
         memberHours.push(hrs);
-        memberColors.push(hrs >= 40 ? '#ec4899' : hrs >= 20 ? '#6366f1' : '#94a3b8');
+        memberColors.push(hrs >= 20 ? '#6366f1' : hrs > 0 ? '#10b981' : '#94a3b8');
       });
 
       if (chartInstances.memberBar) chartInstances.memberBar.destroy();
@@ -2159,7 +2334,7 @@
         data: {
           labels: memberNames,
           datasets: [{
-            label: '申報工時 (小時)',
+            label: selectedProjId === 'ALL' ? '申報總工時 (h)' : '該計畫工時 (h)',
             data: memberHours,
             backgroundColor: memberColors,
             borderRadius: 6
@@ -2168,7 +2343,7 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          indexAxis: 'y', // 橫向柱狀圖更加清晰
+          indexAxis: 'y',
           scales: {
             x: { beginAtZero: true, grid: { color: '#f1f5f9' }, title: { display: true, text: '小時 (h)', font: { size: 10 } } },
             y: { grid: { display: false }, ticks: { font: { size: 11 } } }
@@ -2180,7 +2355,6 @@
       });
 
       // ================= 圖表 4：跨週歷史走勢折線圖 (Weekly Trend Line Chart) =================
-      // 取得最近 4 個週別的歷史資料
       const allWeeks = Array.from(new Set(state.submissions.map(s => s.week))).sort().slice(-5);
       if (!allWeeks.includes(state.selectedWeek)) allWeeks.push(state.selectedWeek);
       allWeeks.sort();
@@ -2193,7 +2367,16 @@
         if (deptFilter !== 'ALL') {
           wSubs = wSubs.filter(s => targetStudentUids.includes(s.userId));
         }
-        const sum = wSubs.reduce((acc, curr) => acc + (parseFloat(curr.totalHours) || 0), 0);
+        let sum = 0;
+        wSubs.forEach(s => {
+          Object.entries(s.hours || {}).forEach(([k, v]) => {
+            const proj = state.projects.find(p => k.startsWith(p.id + '_'));
+            if (proj && (selectedProjId === 'ALL' || proj.id === selectedProjId)) {
+              sum += (parseFloat(v) || 0);
+            }
+          });
+        });
+
         const avg = targetStudents.length > 0 ? (sum / targetStudents.length) : 0;
         trendTotalHours.push(sum);
         trendAvgHours.push(parseFloat(avg.toFixed(1)));
@@ -2208,7 +2391,7 @@
           labels: allWeeks,
           datasets: [
             {
-              label: '實驗室總工時 (h)',
+              label: selectedProjId === 'ALL' ? '實驗室總工時 (h)' : '專案總工時 (h)',
               data: trendTotalHours,
               borderColor: '#6366f1',
               backgroundColor: 'rgba(99, 102, 241, 0.1)',
