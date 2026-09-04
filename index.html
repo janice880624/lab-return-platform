@@ -296,7 +296,7 @@
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-4 mb-4 gap-4">
             <div>
               <h2 class="text-lg font-bold text-slate-800">📋 學生時數回報看板</h2>
-              <p class="text-xs text-slate-400 mt-1">即時呈現 Google Sheet 提交數據，點擊可查看詳細行事曆與回饋</p>
+              <p class="text-xs text-slate-400 mt-1">即時呈現提交數據，點擊可查看詳細行事曆與回饋</p>
             </div>
             
             <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
@@ -345,7 +345,7 @@
           <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
             <div>
               <h2 class="text-lg font-bold text-slate-800">👥 實驗室成員帳號與密碼管理</h2>
-              <p class="text-xs text-slate-400 mt-1">管理成員登入資訊，同步對應 Google Sheet 的 Users 表格。</p>
+              <p class="text-xs text-slate-400 mt-1">管理成員登入資訊。</p>
             </div>
             <button onclick="addNewUserRow()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 rounded-lg transition shadow-sm">
               ➕ 新增實驗室成員
@@ -507,22 +507,23 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-200">
+          <!-- 學生個人工時排行 (已大幅延伸高度並增加左側留白防名稱被切斷) -->
+          <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-200 flex flex-col">
             <h3 id="member-bar-chart-title" class="font-bold text-sm text-slate-800 mb-4 flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-amber-500"></span>
               學生個人研究投入時間與排行 (Bar Chart)
             </h3>
-            <div class="relative w-full h-[320px]">
+            <div class="relative w-full flex-1 min-h-[750px]">
               <canvas id="chart-member-bar"></canvas>
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-200">
+          <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-200 flex flex-col">
             <h3 class="font-bold text-sm text-slate-800 mb-4 flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-sky-500"></span>
-              跨週實驗室總工時與人均走勢 (Weekly Trend Chart)
+              跨週實驗室總工时與人均走勢 (Weekly Trend Chart)
             </h3>
-            <div class="relative w-full h-[320px]">
+            <div class="relative w-full flex-1 min-h-[750px]">
               <canvas id="chart-weekly-trend"></canvas>
             </div>
           </div>
@@ -2454,7 +2455,7 @@
           const projObj = state.projects.find(p => p.id === selectedProjId);
           memberBarTitleEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-indigo-500"></span>成員於「${projObj?.name}」之投入工時排行`;
         } else {
-          memberBarTitleEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span>學生個人研究總投入時間與排行 (已排除請假)`;
+          memberBarTitleEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span>學生個人研究總投入時間與排行 (Bar Chart)`;
         }
       }
 
@@ -2487,9 +2488,20 @@
           responsive: true,
           maintainAspectRatio: false,
           indexAxis: 'y',
+          layout: {
+            padding: {
+              left: 10
+            }
+          },
           scales: {
             x: { beginAtZero: true, grid: { color: '#f1f5f9' }, title: { display: true, text: '小時 (h)', font: { size: 10 } } },
-            y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+            y: { 
+              grid: { display: false }, 
+              ticks: { 
+                font: { size: 11 },
+                autoSkip: false // 確保每個學生的名字都會顯示，不會自動省略
+              } 
+            }
           },
           plugins: {
             legend: { display: false }
